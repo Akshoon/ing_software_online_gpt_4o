@@ -6,3 +6,4 @@ customtkinter
 python-dotenv
 selenium
 webdriver-manager
+flask
