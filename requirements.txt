@@ -1,0 +1,8 @@
+openai==0.28
+pdfplumber
+pandas
+sqlalchemy
+customtkinter
+python-dotenv
+selenium
+webdriver-manager

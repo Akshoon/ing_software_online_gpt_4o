@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procesador de Bibliografía</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="file"] {
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        input[type="file"] {
+            padding: 5px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .flash {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .flash.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .loading.show {
+            display: block;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .success-options {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .success-options h3 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+        .success-options p {
+            color: #155724;
+            margin-bottom: 20px;
+        }
+        .options-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .option-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .download-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        .download-btn:hover {
+            background-color: #0056b3;
+        }
+        .continue-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        .continue-btn:hover {
+            background-color: #1e7e34;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Procesador de Bibliografía</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ 'success' if category == 'message' else 'error' }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST" enctype="multipart/form-data" id="pdfForm">
+            <label for="facultad">Facultad:</label>
+            <input type="text" id="facultad" name="facultad" required>
+
+            <label for="carrera">Carrera:</label>
+            <input type="text" id="carrera" name="carrera" required>
+
+            <label for="files">Archivos PDF:</label>
+            <input type="file" id="files" name="files" multiple accept=".pdf" required>
+
+            <button type="submit" id="processBtn">Procesar PDFs</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Procesando PDFs... Por favor espere.</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <hr>
+
+        <form method="POST" enctype="multipart/form-data" id="csvForm">
+            <label for="csv_file">Archivo CSV para importar:</label>
+            <input type="file" id="csv_file" name="csv_file" accept=".csv">
+
+            <button type="submit" id="importBtn">Importar CSV</button>
+        </form>
+
+        <div class="loading" id="csvLoading">
+            <div class="spinner"></div>
+            <p>Importando CSV... Por favor espere.</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="csvProgressFill"></div>
+            </div>
+        </div>
+
+        {% if show_options %}
+        <hr>
+        <div class="success-options">
+            <h3>¡Procesamiento completado exitosamente!</h3>
+            <p>¿Qué deseas hacer ahora?</p>
+            <div class="options-buttons">
+                <button onclick="downloadFile('{{ download_link }}', 'reporte_bibliografia.csv')" class="option-btn download-btn">Descargar Reporte CSV</button>
+                <button onclick="showUploadForm()" class="option-btn continue-btn">Añadir Más Libros</button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Función para mostrar/ocultar loading
+        function toggleLoading(formId, show) {
+            const loadingDiv = document.getElementById(formId === 'pdfForm' ? 'loading' : 'csvLoading');
+            const progressFill = document.getElementById(formId === 'pdfForm' ? 'progressFill' : 'csvProgressFill');
+            const button = document.getElementById(formId === 'pdfForm' ? 'processBtn' : 'importBtn');
+
+            if (show) {
+                loadingDiv.classList.add('show');
+                button.disabled = true;
+                button.textContent = formId === 'pdfForm' ? 'Procesando...' : 'Importando...';
+
+                // Simular progreso
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    progressFill.style.width = progress + '%';
+
+                    if (!loadingDiv.classList.contains('show')) {
+                        clearInterval(interval);
+                    }
+                }, 500);
+            } else {
+                loadingDiv.classList.remove('show');
+                button.disabled = false;
+                button.textContent = formId === 'pdfForm' ? 'Procesar PDFs' : 'Importar CSV';
+                progressFill.style.width = '0%';
+            }
+        }
+
+        // Función para descargar automáticamente el archivo
+        function downloadFile(url, filename) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Event listeners para los formularios
+        document.getElementById('pdfForm').addEventListener('submit', function(e) {
+            toggleLoading('pdfForm', true);
+        });
+
+        document.getElementById('csvForm').addEventListener('submit', function(e) {
+            toggleLoading('csvForm', true);
+        });
+
+        // Función para mostrar el formulario de subida
+        function showUploadForm() {
+            // Ocultar opciones de éxito
+            const successOptions = document.querySelector('.success-options');
+            if (successOptions) {
+                successOptions.style.display = 'none';
+            }
+
+            // Limpiar formularios
+            document.getElementById('pdfForm').reset();
+            document.getElementById('csvForm').reset();
+
+            // Limpiar session storage para ocultar opciones
+            fetch('/clear_session', { method: 'POST' });
+
+            // Scroll al formulario
+            document.getElementById('pdfForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Ocultar loading cuando se recarga la página (después de submit)
+        window.addEventListener('load', function() {
+            toggleLoading('pdfForm', false);
+            toggleLoading('csvForm', false);
+        });
+    </script>
+</body>
+</html>
