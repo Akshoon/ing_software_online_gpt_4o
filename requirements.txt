@@ -12,3 +12,4 @@ pymupdf4llm
 pymupdf_layout
 mammoth
 google-generativeai
+gunicorn
