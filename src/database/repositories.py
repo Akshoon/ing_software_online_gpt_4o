@@ -31,7 +31,8 @@ Versión: 2.0
 
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from models import Titulo, Carrera, Asignatura, Adquisicion, Sesion
+from src.models import Titulo, Carrera, Asignatura, Adquisicion
+from src.database.db import Sesion
 
 
 class BaseRepository:

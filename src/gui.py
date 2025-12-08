@@ -3,8 +3,9 @@ from tkinter import filedialog, messagebox, ttk
 import os
 import sys
 import threading
-from main import procesar_archivos, generar_reportes
-from models import Sesion, Carrera
+from src.processor import procesar_archivos, generar_reportes
+from src.database.db import Sesion
+from src.models import Carrera
 
 class BibliografiaGUI:
     def __init__(self, root):

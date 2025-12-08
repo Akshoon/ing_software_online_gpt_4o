@@ -2,9 +2,10 @@ from flask import Flask, request, render_template, redirect, url_for, flash, sen
 import os
 import tempfile
 from werkzeug.utils import secure_filename
-from main import procesar_archivos, importar_csv  # Import the processing and import functions
-from models import Sesion, Carrera, Asignatura, Titulo, Adquisicion
-from migrate_db import migrate_db  # Assuming this sets up the DB
+from src.processor import procesar_archivos, importar_csv
+from src.database.db import Sesion
+from src.models import Carrera, Asignatura, Titulo, Adquisicion
+from src.database.migrate_db import migrate_db  # Assuming this sets up the DB
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
@@ -30,14 +31,14 @@ def index():
                 csv_file.save(csv_path)
                 try:
                     importar_csv(csv_path)
-                    flash('CSV imported successfully!')
+                    flash('¡CSV importado exitosamente!')
                 except Exception as e:
-                    flash(f'Error importing CSV: {str(e)}')
+                    flash(f'Error al importar CSV: {str(e)}')
                 return redirect(url_for('index'))
 
         # Handle PDF processing
         if not files or all(f.filename == '' for f in files):
-            flash('No PDF files uploaded')
+            flash('No se subieron archivos PDF')
             return redirect(request.url)
 
         # Save uploaded files to temp directory
@@ -51,7 +52,7 @@ def index():
         # Process the PDFs
         try:
             procesar_archivos(upload_dir, facultad=facultad, carrera_default=carrera)
-            flash('Processing completed successfully!')
+            flash('¡Procesamiento completado exitosamente!')
             # Check if CSV was generated
             csv_path = 'reporte_bibliografia.csv'
             if os.path.exists(csv_path):
@@ -60,7 +61,7 @@ def index():
                 show_options = True
                 download_link = url_for('download_csv')
         except Exception as e:
-            flash(f'Error during processing: {str(e)}')
+            flash(f'Error durante el procesamiento: {str(e)}')
 
         return redirect(url_for('index'))
 
@@ -80,7 +81,7 @@ def download_csv():
     if os.path.exists(csv_path):
         return send_file(csv_path, as_attachment=True, download_name='reporte_bibliografia.csv')
     else:
-        flash('CSV file not found')
+        flash('No se encontró el archivo CSV')
         return redirect(url_for('index'))
 
 @app.route('/clear_session', methods=['POST'])

@@ -184,6 +184,7 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
             'fecha_creacion': None,
             'edicion': None,
             'formato': None,
+            'lugar': None,
             'disponibilidad_fisica': None,
             'disponibilidad_online': None
         }
@@ -223,9 +224,16 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
         campo_map = {
             'Autor': 'autor',
             'Editor': 'editor',
+            'Editorial': 'editor',
             'Fecha de creación': 'fecha_creacion',
             'Edición': 'edicion',
-            'Formato': 'formato'
+            'Edicion': 'edicion',
+            'Versión': 'edicion',
+            'Formato': 'formato',
+            'Publicación': 'lugar',
+            'Imprenta': 'lugar',
+            'Lugar': 'lugar',
+            'Descripción': 'lugar'  # A veces info de publicación está aquí
         }
         
         if not detail_sections:
@@ -280,8 +288,8 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
                 if label == "Título":
                     continue
                 
-                # Detener después del campo "Formato"
-                if campos_procesados >= 5:
+                # Detener después del campo "Formato" (aumentado para buscar Lugar/Publicación)
+                if campos_procesados >= 10:
                     break
                 
                 # Obtener el valor del campo

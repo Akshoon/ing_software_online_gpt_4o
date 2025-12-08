@@ -35,7 +35,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 import openai
 import google.generativeai as genai
-from config import OpenAIConfig
+from src.config import OpenAIConfig
 import random
 
 

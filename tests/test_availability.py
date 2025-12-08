@@ -2,7 +2,7 @@
 Script de prueba para verificar la extracción y procesamiento de disponibilidad
 """
 import re
-from scraper_primo import buscar_libro_detalles
+from src.services.scraper_primo import buscar_libro_detalles
 
 def extraer_numero_copias(disponibilidad_str):
     """

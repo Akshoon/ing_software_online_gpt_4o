@@ -36,13 +36,9 @@ Autor: Sistema de Procesamiento de Bibliografía
 Versión: 2.0
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, Boolean, Table
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
-
-# Base declarativa para todos los modelos
-# PATRÓN: Active Record - Base para mapeo objeto-relacional
-Base = declarative_base()
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean, Table
+from sqlalchemy.orm import relationship
+from src.database.db import Base
 
 
 # ============================================================================
@@ -174,6 +170,8 @@ class Titulo(Base):
     format = Column(String)   # Formato del libro (de Primo)
     physical_availability = Column(String)  # Disponibilidad física
     online_availability = Column(String)  # Disponibilidad online
+    place = Column(String) # Lugar de publicación
+    chapter = Column(String) # Capítulo o artículo
     language = Column(String)  # Idioma del libro
     type_bib = Column(String)  # básica o complementaria
     
@@ -219,19 +217,3 @@ class Adquisicion(Base):
     status = Column(String)  # cotizado, comprado, procesado, activado
     available_printed = Column(Boolean, default=False)
     available_digital = Column(Boolean, default=False)
-
-
-# ============================================================================
-# CONFIGURACIÓN DE BASE DE DATOS
-# ============================================================================
-
-# Motor de base de datos SQLite
-# PATRÓN: Singleton implícito - Una sola conexión a la BD
-motor = create_engine('sqlite:///bibliografia.db')
-
-# Crear todas las tablas
-Base.metadata.create_all(motor)
-
-# Factory de sesiones
-# PATRÓN: Factory - Crea sesiones de base de datos
-Sesion = sessionmaker(bind=motor)

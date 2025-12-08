@@ -1,11 +1,11 @@
 """
 Script para migrar la base de datos y agregar las columnas edition, format, physical_availability y online_availability
 """
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
+from src.database.db import engine
 
 def migrate_db():
-    # Conectar a la base de datos
-    engine = create_engine('sqlite:///bibliografia.db')
+    # Conectar a la base de datos usando el engine compartido
 
     with engine.connect() as conn:
         try:
@@ -77,6 +77,26 @@ def migrate_db():
                 print("✓ Columna 'language' ya existe en titles")
             else:
                 print(f"Error al agregar columna 'language': {e}")
+
+        try:
+            # Agregar columna place a titles
+            conn.execute(text("ALTER TABLE titles ADD COLUMN place TEXT"))
+            print("✓ Columna 'place' agregada exitosamente a titles")
+        except Exception as e:
+            if "duplicate column name" in str(e).lower():
+                print("✓ Columna 'place' ya existe en titles")
+            else:
+                print(f"Error al agregar columna 'place': {e}")
+
+        try:
+            # Agregar columna chapter a titles
+            conn.execute(text("ALTER TABLE titles ADD COLUMN chapter TEXT"))
+            print("✓ Columna 'chapter' agregada exitosamente a titles")
+        except Exception as e:
+            if "duplicate column name" in str(e).lower():
+                print("✓ Columna 'chapter' ya existe en titles")
+            else:
+                print(f"Error al agregar columna 'chapter': {e}")
 
         conn.commit()
 

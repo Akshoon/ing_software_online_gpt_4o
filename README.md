@@ -1,74 +1,122 @@
-# Procesador de Bibliografía de PDFs
+# Procesador de Bibliografía Académica Inteligente
 
-Sistema para procesar archivos PDF de programas académicos y extraer información bibliográfica utilizando OpenAI.
+Sistema automatizado para la gestión, extracción y validación de bibliografías de programas de asignaturas universitarios. Utiliza Inteligencia Artificial (OpenAI GPT y Google Gemini) y Web Scraping para digitalizar, procesar y enriquecer la información bibliográfica.
 
-## Configuración Inicial
+## 🚀 Características Principales
 
-### 1. Instalar Dependencias
+*   **Extracción Inteligente**: Extrae asignaturas, planes, semestres y listas bibliográficas desde archivos PDF y Word (syllabus).
+*   **IA Híbrida**: Combina GPT-3.5/4 y Gemini Pro/Flash para maximizar precisión y minimizar costos. Lógica de fallback y balanceo de carga.
+*   **Web Scraping Automatizado**: Verifica la disponibilidad física y digital de los libros en el catálogo de biblioteca (Primo/Aleph) en tiempo real.
+*   **Normalización de Datos**: Estandariza autores y títulos, completando metadatos faltantes.
+*   **Multi-Interfaz**:
+    *   **Web App**: Interfaz moderna para carga y gestión remota.
+    *   **GUI de Escritorio**: Aplicación nativa para uso local.
+    *   **CLI**: Herramienta de línea de comandos para automatización y scripts.
+*   **Reportes de Gestión**: Genera reportes detallados en CSV para la toma de decisiones sobre adquisiciones.
+
+## 🛠 Requisitos del Sistema
+
+*   Python 3.8 o superior
+*   Google Chrome (para el scraper Selenium)
+*   Claves de API para:
+    *   OpenAI (`OPENAI_API_KEY`)
+    *   Google Gemini (`GEMINI_API_KEY`)
+
+## 📦 Instalación
+
+1.  **Clonar el repositorio**:
+    ```bash
+    git clone <url-del-repositorio>
+    cd ing_software_online_gpt_4o
+    ```
+
+2.  **Crear y activar entorno virtual**:
+    ```bash
+    python -m venv venv
+    # En Windows:
+    .\venv\Scripts\activate
+    # En Mac/Linux:
+    source venv/bin/activate
+    ```
+
+3.  **Instalar dependencias**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4.  **Configuración (.env)**:
+    Crea un archivo `.env` en la raíz del proyecto con tus credenciales:
+    ```env
+    OPENAI_API_KEY=tu_clave_openai_aqui
+    GEMINI_API_KEY=tu_clave_gemini_aqui
+    # Opcionales
+    OPENAI_MODEL=gpt-3.5-turbo
+    ```
+
+## 💻 Uso
+
+### 1. Aplicación Web (Recomendado)
+Interfaz amigable accesible desde el navegador.
 
 ```bash
-pip install -r requirements.txt
+python app.py
+```
+Accede a: `http://localhost:5000`
+
+### 2. Interfaz de Escritorio (GUI)
+Para usuarios que prefieren aplicaciones de ventana.
+
+```bash
+python -m src.gui
 ```
 
-### 2. Configurar Variables de Entorno
-
-1. Copia el archivo `.env.example` a `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edita el archivo `.env` y añade tu clave de API de OpenAI:
-   ```
-   OPENAI_API_KEY=tu_clave_de_openai_aqui
-   ```
-
-   **Importante:** Nunca compartas tu archivo `.env` ni lo subas a Git. Este archivo está incluido en `.gitignore` para proteger tus claves.
-
-### 3. Obtener una Clave de API de OpenAI
-
-Si no tienes una clave de API de OpenAI:
-1. Ve a [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-2. Inicia sesión o crea una cuenta
-3. Genera una nueva clave de API
-4. Copia la clave y pégala en tu archivo `.env`
-
-## Uso
-
-### Modo CLI (Línea de Comandos)
+### 3. Línea de Comandos (CLI)
+Para procesamiento rápido o integración en scripts.
 
 ```bash
 python main.py
 ```
 
-### Modo GUI (Interfaz Gráfica)
-
-```bash
-python gui.py
-```
-
-## Estructura del Proyecto
+## 📂 Estructura del Proyecto
 
 ```
-.
-├── main.py              # Script principal (CLI)
-├── gui.py               # Interfaz gráfica
-├── models.py            # Modelos de base de datos
-├── requirements.txt     # Dependencias del proyecto
-├── .env                 # Variables de entorno (NO subir a Git)
-├── .env.example         # Plantilla de variables de entorno
-├── .gitignore           # Archivos ignorados por Git
-└── archivos/            # Directorio para PDFs a procesar
+/
+├── app.py                  # Servidor Web (Flask)
+├── main.py                 # Punto de entrada CLI
+├── requirements.txt        # Dependencias
+├── .env                    # Variables de entorno
+├── src/
+│   ├── config/             # Gestión de configuración
+│   ├── database/           # Lógica de BD (Modelos, Repositorios, Migraciones)
+│   ├── models/             # Definiciones de objetos (ORM)
+│   ├── services/           # Lógica de negocio
+│   │   ├── ai_providers.py # Estrategias de IA (OpenAI/Gemini)
+│   │   ├── scraper_primo.py# Web Scraping
+│   │   └── ...
+│   ├── gui.py              # Interfaz Gráfica
+│   └── processor.py        # Núcleo de procesamiento lógico
+├── templates/              # Plantillas HTML para la Web App
+├── tests/                  # Tests unitarios y de integración
+└── archivos/               # Carpeta por defecto para documentos
 ```
 
-## Seguridad
+## 🛡 Tecnologías
 
-- ✅ Las claves de API están protegidas en el archivo `.env`
-- ✅ El archivo `.env` está incluido en `.gitignore`
-- ✅ Se proporciona `.env.example` como plantilla
-- ⚠️ Nunca compartas tu archivo `.env` con nadie
-- ⚠️ Nunca subas claves de API a repositorios públicos
+*   **Backend**: Python, Flask
+*   **Base de Datos**: SQLite, SQLAlchemy (ORM)
+*   **IA**: OpenAI API, Google Generative AI SDK
+*   **Scraping**: Selenium WebDriver
+*   **Procesamiento de Archivos**: PyMuPDF (PDF), Mammoth (Docx), Pandas
+*   **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
 
-## Notas
+## 🤝 Contribución
 
-- El archivo `.env` debe estar en la raíz del proyecto
-- Si obtienes un error sobre `OPENAI_API_KEY`, verifica que el archivo `.env` existe y contiene tu clave
+1.  Haz un Fork del proyecto.
+2.  Crea una rama para tu funcionalidad (`git checkout -b feature/nueva-funcionalidad`).
+3.  Haz Commit de tus cambios (`git commit -m 'Agrega nueva funcionalidad'`).
+4.  Haz Push a la rama (`git push origin feature/nueva-funcionalidad`).
+5.  Abre un Pull Request.
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
