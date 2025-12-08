@@ -366,9 +366,9 @@ def generar_reportes():
                 nombre_archivo = f'reporte_bibliografia_{timestamp}.csv'
         
         df.to_csv(nombre_archivo, index=False, sep=';', encoding='utf-8-sig')
-        print(f"✓ Reporte generado exitosamente: {nombre_archivo}")
+        print(f"[OK] Reporte generado exitosamente: {nombre_archivo}")
     except Exception as e:
-        print(f"✗ Error generando reporte: {e}")
+        print(f"[ERROR] Error generando reporte: {e}")
     
     sesion.close()
 
@@ -423,12 +423,12 @@ def almacenar_bibliografia(nombre_asignatura, nombre_carrera, bibliografia, facu
             titulo = buscar_titulo_duplicado(sesion, norm['normalized_author'], norm['normalized_title'])
             
             if titulo:
-                print(f"  -> Duplicado encontrado! (ID: {titulo.id})")
+                print(f"    [DUPLICADO] ID: {titulo.id}")
                 if asignatura not in titulo.asignaturas:
                     titulo.asignaturas.append(asignatura)
                     sesion.commit()
             else:
-                print(f"  -> Título nuevo, creando entrada...")
+                print(f"    [NUEVO] Creando entrada...")
                 es_articulo = entrada.get('type') == 'article' or entrada.get('url') is not None
                 url_articulo = entrada.get('url')
                 
@@ -503,10 +503,10 @@ def procesar_archivos(directorio, facultad='Ciencias Sociales', carrera_default=
                     print(f"No se pudo extraer la asignatura de {nombre_archivo}, omitiendo.")
                     continue
                     
-                print(f"  -> Asignatura: {nombre_asignatura}")
-                print(f"  -> Carrera (Default): {carrera_default}")
-                print(f"  -> Plan: {plan}")
-                print(f"  -> Semestre: {semestre}")
+                print(f"    Asignatura: {nombre_asignatura}")
+                print(f"    Carrera (Default): {carrera_default}")
+                print(f"    Plan: {plan}")
+                print(f"    Semestre: {semestre}")
                 
                 # 3. Extraer bibliografía
                 bibliografia = extraer_bibliografia(texto)

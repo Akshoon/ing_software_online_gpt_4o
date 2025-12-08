@@ -2,7 +2,7 @@
 
 Sistema automatizado para la gestión, extracción y validación de bibliografías de programas de asignaturas universitarios. Utiliza Inteligencia Artificial (OpenAI GPT y Google Gemini) y Web Scraping para digitalizar, procesar y enriquecer la información bibliográfica.
 
-## 🚀 Características Principales
+## Características Principales
 
 *   **Extracción Inteligente**: Extrae asignaturas, planes, semestres y listas bibliográficas desde archivos PDF y Word (syllabus).
 *   **IA Híbrida**: Combina GPT-3.5/4 y Gemini Pro/Flash para maximizar precisión y minimizar costos. Lógica de fallback y balanceo de carga.
@@ -14,7 +14,7 @@ Sistema automatizado para la gestión, extracción y validación de bibliografí
     *   **CLI**: Herramienta de línea de comandos para automatización y scripts.
 *   **Reportes de Gestión**: Genera reportes detallados en CSV para la toma de decisiones sobre adquisiciones.
 
-## 🛠 Requisitos del Sistema
+## Requisitos del Sistema
 
 *   Python 3.8 o superior
 *   Google Chrome (para el scraper Selenium)
@@ -22,7 +22,7 @@ Sistema automatizado para la gestión, extracción y validación de bibliografí
     *   OpenAI (`OPENAI_API_KEY`)
     *   Google Gemini (`GEMINI_API_KEY`)
 
-## 📦 Instalación
+## Instalación
 
 1.  **Clonar el repositorio**:
     ```bash
@@ -53,7 +53,7 @@ Sistema automatizado para la gestión, extracción y validación de bibliografí
     OPENAI_MODEL=gpt-3.5-turbo
     ```
 
-## 💻 Uso
+## Uso
 
 ### 1. Aplicación Web (Recomendado)
 Interfaz amigable accesible desde el navegador.
@@ -77,7 +77,7 @@ Para procesamiento rápido o integración en scripts.
 python main.py
 ```
 
-## 📂 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 /
@@ -100,7 +100,7 @@ python main.py
 └── archivos/               # Carpeta por defecto para documentos
 ```
 
-## 🛡 Tecnologías
+## Tecnologías
 
 *   **Backend**: Python, Flask
 *   **Base de Datos**: SQLite, SQLAlchemy (ORM)
@@ -108,15 +108,3 @@ python main.py
 *   **Scraping**: Selenium WebDriver
 *   **Procesamiento de Archivos**: PyMuPDF (PDF), Mammoth (Docx), Pandas
 *   **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-
-## 🤝 Contribución
-
-1.  Haz un Fork del proyecto.
-2.  Crea una rama para tu funcionalidad (`git checkout -b feature/nueva-funcionalidad`).
-3.  Haz Commit de tus cambios (`git commit -m 'Agrega nueva funcionalidad'`).
-4.  Haz Push a la rama (`git push origin feature/nueva-funcionalidad`).
-5.  Abre un Pull Request.
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.

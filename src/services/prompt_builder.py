@@ -19,11 +19,11 @@ PRINCIPIOS SOLID APLICADOS:
 ============================
 
 S - Single Responsibility Principle
-    ✓ Cada método del builder tiene una responsabilidad específica
-    ✓ Separación entre construcción y representación
+    - Cada método del builder tiene una responsabilidad específica
+    - Separación entre construcción y representación
 
 O - Open/Closed Principle
-    ✓ Fácil agregar nuevos tipos de prompts sin modificar código existente
+    - Fácil agregar nuevos tipos de prompts sin modificar código existente
 
 Autor: Sistema de Procesamiento de Bibliografía
 Versión: 2.0
@@ -288,8 +288,8 @@ class BibliographyPrompts:
         return (PromptBuilder()
             .set_task("Extraer bibliografía del siguiente texto")
             .add_instruction("Diferencia entre libros y artículos web")
-            .add_instruction("Si tiene URL → es artículo web (type='article')")
-            .add_instruction("Si tiene editorial → es libro (type='book')")
+            .add_instruction("Si tiene URL -> es artículo web (type='article')")
+            .add_instruction("Si tiene editorial -> es libro (type='book')")
             .set_output_format("JSON", """{
   "basic": [{"author": "...", "year": "...", "title": "...", "type": "..."}],
   "complementary": [...]

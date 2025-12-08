@@ -19,13 +19,13 @@ PRINCIPIOS SOLID APLICADOS:
 ============================
 
 S - Single Responsibility Principle (Principio de Responsabilidad Única)
-    ✓ Cada estrategia maneja un proveedor específico
+    - Cada estrategia maneja un proveedor específico
 
 O - Open/Closed Principle (Principio Abierto/Cerrado)
-    ✓ Fácil agregar nuevos proveedores sin modificar código existente
+    - Fácil agregar nuevos proveedores sin modificar código existente
 
 D - Dependency Inversion Principle (Principio de Inversión de Dependencias)
-    ✓ Código depende de abstracción (AIProviderStrategy)
+    - Código depende de abstracción (AIProviderStrategy)
 
 Autor: Sistema de Procesamiento de Bibliografía
 Versión: 2.1 (con soporte multi-proveedor)
@@ -197,7 +197,7 @@ class GeminiStrategy(AIProviderStrategy):
                 if "429" in error_str or "TooManyRequests" in error_str or "quota" in error_str.lower():
                     if attempt < max_retries - 1:
                         delay = base_delay * (2 ** attempt)  # Exponential backoff: 2, 4, 8...
-                        print(f"⚠ Rate limit en Gemini. Reintentando en {delay}s... (Intento {attempt+1}/{max_retries})")
+                        print(f"[WARN] Rate limit en Gemini. Reintentando en {delay}s... (Intento {attempt+1}/{max_retries})")
                         time.sleep(delay)
                         continue
                 
@@ -235,16 +235,16 @@ class AIProviderFactory:
             # Intentar inicializar OpenAI
             try:
                 self.providers['openai'] = OpenAIStrategy()
-                print("✓ OpenAI configurado")
+                print("[OK] OpenAI configurado")
             except Exception as e:
-                print(f"⚠ OpenAI no disponible: {e}")
+                print(f"[WARN] OpenAI no disponible: {e}")
             
             # Intentar inicializar Gemini
             try:
                 self.providers['gemini'] = GeminiStrategy()
-                print("✓ Gemini configurado")
+                print("[OK] Gemini configurado")
             except Exception as e:
-                print(f"⚠ Gemini no disponible: {e}")
+                print(f"[WARN] Gemini no disponible: {e}")
         else:
             self.providers = providers
         
@@ -275,7 +275,7 @@ class AIProviderFactory:
         if self.load_balance and len(self.providers) > 1:
             provider_key = self.provider_keys[self.current_provider_index]
             self.current_provider_index = (self.current_provider_index + 1) % len(self.provider_keys)
-            print(f"📊 Usando proveedor: {provider_key}")
+            print(f"[INFO] Usando proveedor: {provider_key}")
             return self.providers[provider_key]
         
         # Usar el primer proveedor disponible
@@ -314,13 +314,13 @@ class AIProviderFactory:
         for provider_name in providers_to_try:
             try:
                 provider = self.providers[provider_name]
-                print(f"🔄 Intentando con {provider.get_provider_name()}...")
+                print(f"[INFO] Intentando con {provider.get_provider_name()}...")
                 response = provider.generate_completion(prompt, max_tokens, temperature)
-                print(f"✓ Respuesta exitosa de {provider.get_provider_name()}")
+                print(f"[OK] Respuesta exitosa de {provider.get_provider_name()}")
                 return response, provider_name
             except Exception as e:
                 last_error = e
-                print(f"✗ Error con {provider_name}: {str(e)[:100]}")
+                print(f"[ERROR] Error con {provider_name}: {str(e)[:100]}")
                 continue
         
         # Si todos fallaron

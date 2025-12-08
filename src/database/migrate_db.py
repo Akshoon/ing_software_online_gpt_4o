@@ -11,96 +11,96 @@ def migrate_db():
         try:
             # Agregar columna edition si no existe
             conn.execute(text("ALTER TABLE titles ADD COLUMN edition TEXT"))
-            print("✓ Columna 'edition' agregada exitosamente")
+            print("[OK] Columna 'edition' agregada exitosamente")
         except Exception as e:
             if "duplicate column name" in str(e).lower():
-                print("✓ Columna 'edition' ya existe")
+                print("[OK] Columna 'edition' ya existe")
             else:
                 print(f"Error al agregar columna 'edition': {e}")
 
         try:
             # Agregar columna format si no existe
             conn.execute(text("ALTER TABLE titles ADD COLUMN format TEXT"))
-            print("✓ Columna 'format' agregada exitosamente")
+            print("[OK] Columna 'format' agregada exitosamente")
         except Exception as e:
             if "duplicate column name" in str(e).lower():
-                print("✓ Columna 'format' ya existe")
+                print("[OK] Columna 'format' ya existe")
             else:
                 print(f"Error al agregar columna 'format': {e}")
 
         try:
             # Agregar columna physical_availability si no existe
             conn.execute(text("ALTER TABLE titles ADD COLUMN physical_availability TEXT"))
-            print("✓ Columna 'physical_availability' agregada exitosamente")
+            print("[OK] Columna 'physical_availability' agregada exitosamente")
         except Exception as e:
             if "duplicate column name" in str(e).lower():
-                print("✓ Columna 'physical_availability' ya existe")
+                print("[OK] Columna 'physical_availability' ya existe")
             else:
                 print(f"Error al agregar columna 'physical_availability': {e}")
 
         try:
             # Agregar columna online_availability si no existe
             conn.execute(text("ALTER TABLE titles ADD COLUMN online_availability TEXT"))
-            print("✓ Columna 'online_availability' agregada exitosamente")
+            print("[OK] Columna 'online_availability' agregada exitosamente")
         except Exception as e:
             if "duplicate column name" in str(e).lower():
-                print("✓ Columna 'online_availability' ya existe")
+                print("[OK] Columna 'online_availability' ya existe")
             else:
                 print(f"Error al agregar columna 'online_availability': {e}")
 
         try:
             # Agregar columna plan a subjects
             conn.execute(text("ALTER TABLE subjects ADD COLUMN plan TEXT"))
-            print("✓ Columna 'plan' agregada exitosamente a subjects")
+            print("[OK] Columna 'plan' agregada exitosamente a subjects")
         except Exception as e:
             if "duplicate column name" in str(e).lower():
-                print("✓ Columna 'plan' ya existe en subjects")
+                print("[OK] Columna 'plan' ya existe en subjects")
             else:
                 print(f"Error al agregar columna 'plan': {e}")
 
         try:
             # Agregar columna semester a subjects
             conn.execute(text("ALTER TABLE subjects ADD COLUMN semester TEXT"))
-            print("✓ Columna 'semester' agregada exitosamente a subjects")
+            print("[OK] Columna 'semester' agregada exitosamente a subjects")
         except Exception as e:
             if "duplicate column name" in str(e).lower():
-                print("✓ Columna 'semester' ya existe en subjects")
+                print("[OK] Columna 'semester' ya existe en subjects")
             else:
                 print(f"Error al agregar columna 'semester': {e}")
 
         try:
             # Agregar columna language a titles
             conn.execute(text("ALTER TABLE titles ADD COLUMN language TEXT"))
-            print("✓ Columna 'language' agregada exitosamente a titles")
+            print("[OK] Columna 'language' agregada exitosamente a titles")
         except Exception as e:
             if "duplicate column name" in str(e).lower():
-                print("✓ Columna 'language' ya existe en titles")
+                print("[OK] Columna 'language' ya existe en titles")
             else:
                 print(f"Error al agregar columna 'language': {e}")
 
         try:
             # Agregar columna place a titles
             conn.execute(text("ALTER TABLE titles ADD COLUMN place TEXT"))
-            print("✓ Columna 'place' agregada exitosamente a titles")
+            print("[OK] Columna 'place' agregada exitosamente a titles")
         except Exception as e:
             if "duplicate column name" in str(e).lower():
-                print("✓ Columna 'place' ya existe en titles")
+                print("[OK] Columna 'place' ya existe en titles")
             else:
                 print(f"Error al agregar columna 'place': {e}")
 
         try:
             # Agregar columna chapter a titles
             conn.execute(text("ALTER TABLE titles ADD COLUMN chapter TEXT"))
-            print("✓ Columna 'chapter' agregada exitosamente a titles")
+            print("[OK] Columna 'chapter' agregada exitosamente a titles")
         except Exception as e:
             if "duplicate column name" in str(e).lower():
-                print("✓ Columna 'chapter' ya existe en titles")
+                print("[OK] Columna 'chapter' ya existe en titles")
             else:
                 print(f"Error al agregar columna 'chapter': {e}")
 
         conn.commit()
 
-    print("\n✓ Migración completada. La base de datos está lista para usar.")
+    print("\n[OK] Migración completada. La base de datos está lista para usar.")
 
 if __name__ == '__main__':
     migrate_db()

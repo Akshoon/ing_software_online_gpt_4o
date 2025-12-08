@@ -92,14 +92,14 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
                     libro_url = libro_enlace.get_attribute('href')
                     if libro_url and libro_url.strip():  # Verifica que la URL no esté vacía
                         if verbose:
-                            print(f"✓ Enlace encontrado con selector: {selector}")
+                            print(f"[OK] Enlace encontrado con selector: {selector}")
                         break
             except:
                 continue
         
         if not libro_enlace or not libro_url or not libro_url.strip():
             if verbose:
-                print("✗ Error: No se pudo encontrar un enlace válido al libro")
+                print("[ERROR] Error: No se pudo encontrar un enlace válido al libro")
                 print("Intentando hacer clic directamente en el primer resultado...")
             # Como último recurso, intenta hacer clic en el primer resultado
             libro_enlace = primer_resultado.find_element(By.CSS_SELECTOR, '.item-title a')
@@ -110,7 +110,7 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
                 lambda d: 'fulldisplay' in d.current_url or 'discovery/fulldisplay' in d.current_url
             )
             if verbose:
-                print(f"✓ Navegación completada. URL actual: {driver.current_url}")
+                print(f"[OK] Navegación completada. URL actual: {driver.current_url}")
         else:
             # Reemplaza "&amp;" por "&" para asegurar que la URL esté bien formada
             libro_url = libro_url.replace("&amp;", "&")
@@ -122,7 +122,7 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
             
     except Exception as e:
         if verbose:
-            print(f"✗ Error al extraer el enlace del libro: {e}")
+            print(f"[ERROR] Error al extraer el enlace del libro: {e}")
             print("Intentando estrategia alternativa...")
         # Estrategia alternativa: hacer clic directamente
         try:
@@ -133,10 +133,10 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
                 lambda d: 'fulldisplay' in d.current_url
             )
             if verbose:
-                print(f"✓ Navegación completada mediante clic. URL actual: {driver.current_url}")
+                print(f"[OK] Navegación completada mediante clic. URL actual: {driver.current_url}")
         except Exception as e2:
             if verbose:
-                print(f"✗ Error en estrategia alternativa: {e2}")
+                print(f"[ERROR] Error en estrategia alternativa: {e2}")
             driver.quit()
             return None
 
@@ -158,14 +158,14 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
             )
             if title_element:
                 if verbose:
-                    print(f"✓ Título encontrado con selector: {selector}")
+                    print(f"[OK] Título encontrado con selector: {selector}")
                 break
         except:
             continue
     
     if not title_element:
         if verbose:
-            print("✗ No se pudo encontrar el título del libro")
+            print("[ERROR] No se pudo encontrar el título del libro")
         driver.quit()
         return None
 
@@ -217,7 +217,7 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
             detail_sections = driver.find_elements(By.CSS_SELECTOR, selector)
             if detail_sections:
                 if verbose:
-                    print(f"✓ Encontradas {len(detail_sections)} secciones de detalles con selector: {selector}")
+                    print(f"[OK] Encontradas {len(detail_sections)} secciones de detalles con selector: {selector}")
                 break
         
         # Mapeo de nombres de campos a claves del diccionario
@@ -238,12 +238,12 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
         
         if not detail_sections:
             if verbose:
-                print("✗ No se encontraron secciones de detalles. Intentando método alternativo...")
+                print("[ERROR] No se encontraron secciones de detalles. Intentando método alternativo...")
             # Método alternativo: buscar directamente los labels
             try:
                 labels = driver.find_elements(By.CSS_SELECTOR, 'span.bold-text[data-details-label]')
                 if verbose:
-                    print(f"✓ Encontrados {len(labels)} campos mediante labels")
+                    print(f"[OK] Encontrados {len(labels)} campos mediante labels")
                 for label_elem in labels:
                     try:
                         label = label_elem.text.strip()
@@ -274,7 +274,7 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
                         continue
             except Exception as e:
                 if verbose:
-                    print(f"✗ Error en método alternativo: {e}")
+                    print(f"[ERROR] Error en método alternativo: {e}")
         
         # Procesar solo hasta el campo "Formato" (5 campos después del título)
         campos_procesados = 0
@@ -361,7 +361,7 @@ def buscar_libro_detalles(termino_busqueda, verbose=False):
     
     except Exception as e:
         if verbose:
-            print(f"✗ Error al extraer los detalles del libro: {e}")
+            print(f"[ERROR] Error al extraer los detalles del libro: {e}")
             import traceback
             traceback.print_exc()
         
