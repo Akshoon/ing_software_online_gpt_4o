@@ -3,7 +3,7 @@ from tkinter import filedialog, messagebox, ttk
 import os
 import sys
 import threading
-from main import procesar_pdfs, generar_reportes
+from main import procesar_archivos, generar_reportes
 from models import Sesion, Carrera
 
 class BibliografiaGUI:
@@ -44,8 +44,8 @@ class BibliografiaGUI:
         self.carrera_combo.grid(row=2, column=1, sticky=(tk.W, tk.E), pady=5)
         self.carrera_combo['values'] = ["Trabajo Social"]  # Default
 
-        # Directorio PDFs
-        ttk.Label(main_frame, text="Directorio PDFs:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        # Directorio de archivos
+        ttk.Label(main_frame, text="Directorio de archivos:").grid(row=3, column=0, sticky=tk.W, pady=5)
         dir_frame = ttk.Frame(main_frame)
         dir_frame.grid(row=3, column=1, sticky=(tk.W, tk.E), pady=5)
         self.dir_entry = ttk.Entry(dir_frame, textvariable=self.pdf_dir_var, width=30)
@@ -57,7 +57,7 @@ class BibliografiaGUI:
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=4, column=0, columnspan=2, pady=20)
 
-        self.process_button = ttk.Button(button_frame, text="Procesar PDFs",
+        self.process_button = ttk.Button(button_frame, text="Procesar Archivos",
                                        command=self.process_pdfs, width=20)
         self.process_button.pack(side=tk.LEFT, padx=(0, 10))
 
@@ -101,7 +101,7 @@ class BibliografiaGUI:
             self.pdf_dir_var.set(directory)
 
     def process_pdfs(self):
-        """Procesa los PDFs con los parámetros especificados."""
+        """Procesa los archivos (PDF, Word) con los parámetros especificados."""
         facultad = self.facultad_var.get().strip()
         carrera = self.carrera_var.get().strip()
         pdf_dir = self.pdf_dir_var.get().strip()
@@ -129,7 +129,7 @@ class BibliografiaGUI:
 
                 f = io.StringIO()
                 with redirect_stdout(f):
-                    procesar_pdfs(pdf_dir, facultad, carrera)
+                    procesar_archivos(pdf_dir, facultad, carrera)
 
                 output = f.getvalue()
                 # Usar after para actualizar la UI en el hilo principal

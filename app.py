@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, redirect, url_for, flash, sen
 import os
 import tempfile
 from werkzeug.utils import secure_filename
-from main import procesar_pdfs, importar_csv  # Import the processing and import functions
+from main import procesar_archivos, importar_csv  # Import the processing and import functions
 from models import Sesion, Carrera, Asignatura, Titulo, Adquisicion
 from migrate_db import migrate_db  # Assuming this sets up the DB
 
@@ -43,13 +43,14 @@ def index():
         # Save uploaded files to temp directory
         upload_dir = tempfile.mkdtemp()
         for file in files:
-            if file and file.filename.endswith('.pdf'):
+            # Aceptar archivos PDF y Word
+            if file and (file.filename.endswith('.pdf') or file.filename.endswith('.docx')):
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(upload_dir, filename))
 
         # Process the PDFs
         try:
-            procesar_pdfs(upload_dir, facultad=facultad, carrera_default=carrera)
+            procesar_archivos(upload_dir, facultad=facultad, carrera_default=carrera)
             flash('Processing completed successfully!')
             # Check if CSV was generated
             csv_path = 'reporte_bibliografia.csv'
@@ -67,6 +68,9 @@ def index():
     if session.get('show_options'):
         show_options = True
         download_link = session.get('download_link')
+        # Clear session so it doesn't persist on refresh or new visit
+        session.pop('show_options', None)
+        session.pop('download_link', None)
 
     return render_template('index.html', download_link=download_link, show_options=show_options)
 
@@ -87,4 +91,4 @@ def clear_session():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # Usa el puerto que asigna Railway
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)

@@ -48,6 +48,36 @@ def migrate_db():
             else:
                 print(f"Error al agregar columna 'online_availability': {e}")
 
+        try:
+            # Agregar columna plan a subjects
+            conn.execute(text("ALTER TABLE subjects ADD COLUMN plan TEXT"))
+            print("✓ Columna 'plan' agregada exitosamente a subjects")
+        except Exception as e:
+            if "duplicate column name" in str(e).lower():
+                print("✓ Columna 'plan' ya existe en subjects")
+            else:
+                print(f"Error al agregar columna 'plan': {e}")
+
+        try:
+            # Agregar columna semester a subjects
+            conn.execute(text("ALTER TABLE subjects ADD COLUMN semester TEXT"))
+            print("✓ Columna 'semester' agregada exitosamente a subjects")
+        except Exception as e:
+            if "duplicate column name" in str(e).lower():
+                print("✓ Columna 'semester' ya existe en subjects")
+            else:
+                print(f"Error al agregar columna 'semester': {e}")
+
+        try:
+            # Agregar columna language a titles
+            conn.execute(text("ALTER TABLE titles ADD COLUMN language TEXT"))
+            print("✓ Columna 'language' agregada exitosamente a titles")
+        except Exception as e:
+            if "duplicate column name" in str(e).lower():
+                print("✓ Columna 'language' ya existe en titles")
+            else:
+                print(f"Error al agregar columna 'language': {e}")
+
         conn.commit()
 
     print("\n✓ Migración completada. La base de datos está lista para usar.")

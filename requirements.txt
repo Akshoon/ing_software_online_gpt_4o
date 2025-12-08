@@ -7,3 +7,8 @@ python-dotenv
 selenium
 webdriver-manager
 flask
+python-docx
+pymupdf4llm
+pymupdf_layout
+mammoth
+google-generativeai
