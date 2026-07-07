@@ -1,39 +1,64 @@
-# Usar imagen base de Python oficial
-FROM python:3.11-slim
+# ── Stage 1: dependencias ────────────────────────────────────────
+FROM python:3.11-slim AS builder
 
-# Evitar que Python escriba archivos .pyc y buffer de stdout
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Instalar dependencias del sistema necesarias para Chrome y Selenium
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
-    curl \
-    unzip \
-    ca-certificates \
-    && wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && apt-get install -y /tmp/chrome.deb \
-    && rm /tmp/chrome.deb \
-    && rm -rf /var/lib/apt/lists/*
-
-# Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de requerimientos
+# Dependencias del sistema para compilar paquetes nativos
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --prefix=/install --no-cache-dir -r requirements.txt
 
-# Instalar dependencias de Python
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar el resto del código de la aplicación
+# ── Stage 2: imagen final ─────────────────────────────────────────
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=5000
+
+WORKDIR /app
+
+# Dependencias mínimas de runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libssl3 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar paquetes instalados desde el stage builder
+COPY --from=builder /install /usr/local
+
+# Copiar código de la aplicación
 COPY . .
 
-# Crear directorios necesarios si no existen
-RUN mkdir -p archivos instances db_migrations
+# Crear directorios necesarios
+RUN mkdir -p /app/data /app/uploads
 
-# Exponer el puerto que usa Flask
+# Usuario no-root para seguridad
+RUN adduser --disabled-password --gecos '' appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
 EXPOSE 5000
 
-# Comando para ejecutar la aplicación
-CMD ["python", "app.py"]
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/login')" || exit 1
+
+# Gunicorn para producción
+CMD ["gunicorn", \
+     "--bind", "0.0.0.0:5000", \
+     "--workers", "2", \
+     "--threads", "4", \
+     "--timeout", "120", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "app:app"]

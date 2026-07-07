@@ -1,0 +1,40 @@
+services:
+  web:
+    build: .
+    container_name: bibliografia_app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      # Persistencia del reporte CSV generado
+      - ./reporte_bibliografia.csv:/app/reporte_bibliografia.csv
+      # Persistencia de la base de datos SQLite
+      - app_db:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:5000/login')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Nginx como reverse proxy (opcional pero recomendado)
+  nginx:
+    image: nginx:alpine
+    container_name: bibliografia_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      web:
+        condition: service_healthy
+    profiles:
+      - production   # solo se activa con: docker compose --profile production up
+
+volumes:
+  app_db:

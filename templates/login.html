@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión — Bibliografía Académica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .login-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 44px 40px 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(15,23,42,0.10), 0 2px 8px rgba(15,23,42,0.07);
+        }
+
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: #0ea5e9;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .logo-icon svg { color: #fff; }
+        .logo-text h1 { font-size: 16px; font-weight: 700; color: #0f172a; letter-spacing: -0.3px; }
+        .logo-text p  { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+
+        .card-title    { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.4px; }
+        .card-subtitle { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+
+        .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+        label { font-size: 13px; font-weight: 500; color: #0f172a; }
+
+        input[type="text"],
+        input[type="password"] {
+            padding: 10px 13px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font: 14px/1 'Inter', sans-serif;
+            color: #0f172a;
+            background: #f8fafc;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        input:focus {
+            border-color: #0ea5e9;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(14,165,233,.12);
+        }
+        input::placeholder { color: #94a3b8; }
+
+        .password-wrap { position: relative; }
+        .toggle-pass {
+            position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer;
+            color: #94a3b8; padding: 4px;
+            display: flex; align-items: center; justify-content: center;
+            transition: color .15s;
+        }
+        .toggle-pass:hover { color: #475569; }
+
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 10px 13px;
+            font-size: 13px; font-weight: 500; color: #991b1b;
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 16px;
+            animation: shake .3s ease;
+        }
+        @keyframes shake {
+            0%,100%{ transform:translateX(0); }
+            20%    { transform:translateX(-6px); }
+            60%    { transform:translateX(6px); }
+        }
+
+        .btn-login {
+            width: 100%; padding: 11px;
+            background: #0ea5e9;
+            border: none; border-radius: 8px;
+            font: 14px/1 'Inter', sans-serif; font-weight: 600;
+            color: #fff; cursor: pointer;
+            margin-top: 4px;
+            transition: background .15s, transform .15s, box-shadow .15s;
+            box-shadow: 0 1px 4px rgba(14,165,233,.35);
+        }
+        .btn-login:hover { background: #0284c7; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(14,165,233,.4); }
+        .btn-login:active { transform: translateY(0); }
+
+        .divider {
+            display: flex; align-items: center; gap: 10px;
+            margin: 22px 0 0; color: #94a3b8; font-size: 11px;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px; background: #e2e8f0;
+        }
+
+        .footer-note { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 24px; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <!-- Logo -->
+    <div class="logo-wrap">
+        <div class="logo-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+        </div>
+        <div class="logo-text">
+            <h1>Bibliografía Académica</h1>
+            <p>Sistema de gestión bibliográfica</p>
+        </div>
+    </div>
+
+    <p class="card-title">Iniciar sesión</p>
+    <p class="card-subtitle">Ingresa tus credenciales para continuar.</p>
+
+    {% if error %}
+    <div class="error-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('login', next=request.args.get('next', '')) }}">
+        <div class="form-group">
+            <label for="username">Usuario</label>
+            <input type="text" id="username" name="username" placeholder="Ingresa tu usuario"
+                   value="{{ request.form.get('username', '') }}" autocomplete="username" required autofocus>
+        </div>
+        <div class="form-group">
+            <label for="password">Contraseña</label>
+            <div class="password-wrap">
+                <input type="password" id="password" name="password"
+                       placeholder="Ingresa tu contraseña" autocomplete="current-password" required>
+                <button type="button" class="toggle-pass" id="togglePass" title="Mostrar/ocultar contraseña">
+                    <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-login">Ingresar</button>
+    </form>
+
+    <div class="footer-note">
+        &copy; {{ 2026 }} · Bibliografía Académica
+    </div>
+</div>
+
+<script>
+var btn = document.getElementById('togglePass');
+var inp = document.getElementById('password');
+btn.addEventListener('click', function() {
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        document.getElementById('eyeIcon').innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    } else {
+        inp.type = 'password';
+        document.getElementById('eyeIcon').innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
+});
+</script>
+</body>
+</html>

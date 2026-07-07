@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte Bibliográfico</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:          #f1f5f9;
+            --white:       #ffffff;
+            --border:      #e2e8f0;
+            --accent:      #0ea5e9;
+            --accent-dark: #0284c7;
+            --accent-bg:   #e0f2fe;
+            --text:        #0f172a;
+            --text-2:      #475569;
+            --text-3:      #94a3b8;
+            --row-even:    #f8fafc;
+            --row-hover:   #f0f9ff;
+            --shadow:      0 1px 4px rgba(15,23,42,.08);
+            --r:           8px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── NAV ─────────────────────────── */
+        nav {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            gap: 12px;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 200;
+        }
+        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .nav-back {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px; font-weight: 500;
+            color: var(--text-2);
+            background: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all .15s;
+        }
+        .nav-back:hover { background: var(--bg); color: var(--text); }
+        .nav-title { font-size: 15px; font-weight: 600; }
+        .badge {
+            background: var(--accent-bg);
+            color: var(--accent-dark);
+            font-size: 11px; font-weight: 600;
+            padding: 2px 9px; border-radius: 99px;
+        }
+        .nav-right { display: flex; gap: 8px; }
+
+        /* ── BUTTONS ─────────────────────── */
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 15px; border: none;
+            border-radius: 6px; font-family: inherit;
+            font-size: 13px; font-weight: 500;
+            cursor: pointer; text-decoration: none;
+            transition: all .15s;
+        }
+        .btn-outline { background: var(--white); border: 1px solid var(--border); color: var(--text-2); }
+        .btn-outline:hover { background: var(--bg); color: var(--text); }
+        .btn-solid { background: var(--accent); color: #fff; }
+        .btn-solid:hover { background: var(--accent-dark); transform: translateY(-1px); }
+
+        /* ── MAIN ────────────────────────── */
+        .main { flex: 1; padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 14px; }
+
+        /* ── STAT CARDS ──────────────────── */
+        .stats { display: flex; gap: 10px; flex-wrap: wrap; }
+        .stat {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            padding: 12px 18px;
+            min-width: 120px;
+            box-shadow: var(--shadow);
+        }
+        .stat-lbl { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-3); margin-bottom: 3px; }
+        .stat-val { font-size: 20px; font-weight: 700; color: var(--text); }
+        .stat-val.blue { color: var(--accent-dark); }
+
+        /* ── TOOLBAR ─────────────────────── */
+        .toolbar {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            padding: 12px 16px;
+            box-shadow: var(--shadow);
+        }
+        .search-box { position: relative; flex: 1; min-width: 200px; }
+        .search-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+        .search-box input {
+            width: 100%; padding: 8px 12px 8px 33px;
+            border: 1px solid var(--border); border-radius: 6px;
+            font: inherit; font-size: 13px; color: var(--text);
+            background: var(--bg); outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .search-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,165,233,.12); }
+        .search-box input::placeholder { color: var(--text-3); }
+
+        select {
+            padding: 8px 28px 8px 11px;
+            border: 1px solid var(--border); border-radius: 6px;
+            font: inherit; font-size: 13px; color: var(--text-2);
+            background: var(--bg); cursor: pointer; outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            transition: border-color .15s;
+        }
+        select:focus { border-color: var(--accent); }
+
+        .toolbar-right { margin-left: auto; font-size: 12px; color: var(--text-3); white-space: nowrap; }
+
+        /* ── TABLE CONTAINER ─────────────── */
+        .table-wrap {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .table-scroll {
+            overflow: auto;
+            flex: 1;
+            max-height: calc(100vh - 320px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        /* HEADER */
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        thead tr { background: #f1f5f9; }
+        thead th {
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-2);
+            text-align: left;
+            white-space: nowrap;
+            border-bottom: 2px solid var(--border);
+            border-right: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+            transition: background .12s, color .12s;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        thead th:last-child { border-right: none; }
+        thead th:hover { background: #e8f4fd; color: var(--accent-dark); }
+        thead th.asc  { background: var(--accent-bg); color: var(--accent-dark); }
+        thead th.desc { background: var(--accent-bg); color: var(--accent-dark); }
+
+        .th-content { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+        .th-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .th-sort { flex-shrink: 0; font-size: 10px; opacity: .35; }
+        thead th.asc  .th-sort,
+        thead th.desc .th-sort { opacity: 1; }
+
+        /* Row # */
+        .th-row-num {
+            width: 44px; min-width: 44px; max-width: 44px;
+            text-align: center; cursor: default !important;
+            color: var(--text-3) !important;
+        }
+        .th-row-num:hover { background: #f1f5f9 !important; color: var(--text-3) !important; }
+        .td-row-num {
+            width: 44px; min-width: 44px; text-align: center;
+            color: var(--text-3); font-size: 11px;
+            background: #f8fafc;
+            border-right: 1px solid var(--border);
+            padding: 10px 6px;
+        }
+
+        /* BODY */
+        tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:nth-child(even) { background: var(--row-even); }
+        tbody tr:hover { background: var(--row-hover) !important; }
+
+        tbody td {
+            padding: 9px 14px;
+            color: var(--text);
+            border-right: 1px solid var(--border);
+            white-space: nowrap;
+            max-width: 240px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: middle;
+            line-height: 1.4;
+        }
+        tbody td:last-child { border-right: none; }
+
+        /* Pill badges for certain values */
+        .pill {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .pill-blue   { background: #dbeafe; color: #1d4ed8; }
+        .pill-green  { background: #d1fae5; color: #065f46; }
+        .pill-gray   { background: #f1f5f9; color: #475569; }
+
+        /* ── EMPTY / LOADING ─────────────── */
+        .state-box {
+            padding: 60px 24px;
+            text-align: center;
+            color: var(--text-3);
+        }
+        .state-box svg { display: block; margin: 0 auto 14px; }
+        .state-box h3 { font-size: 15px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+        .state-box p  { font-size: 13px; }
+
+        .skeleton { padding: 10px 16px; }
+        .skel-line {
+            height: 36px; border-radius: 4px; margin-bottom: 6px;
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: sh 1.1s infinite;
+        }
+        @keyframes sh { to { background-position: -200% 0; } }
+
+        /* ── PAGINATION ──────────────────── */
+        .pag-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            background: #f8fafc;
+            gap: 12px; flex-wrap: wrap;
+        }
+        .pag-info { font-size: 12px; color: var(--text-3); }
+        .pag-btns { display: flex; gap: 3px; }
+        .pb {
+            min-width: 30px; height: 30px;
+            display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid var(--border); border-radius: 5px;
+            background: var(--white); font: 13px/1 'Inter', sans-serif; font-weight: 500;
+            color: var(--text-2); cursor: pointer;
+            transition: all .13s;
+            padding: 0 7px;
+        }
+        .pb:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+        .pb.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .pb:disabled { opacity: .35; cursor: not-allowed; }
+        .pb-dots { padding: 0 4px; color: var(--text-3); font-size: 13px; line-height: 30px; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-left">
+        <a href="/" class="nav-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Inicio
+        </a>
+        <span class="nav-title">Reporte Bibliográfico</span>
+        <span class="badge" id="navBadge" style="display:none">—</span>
+    </div>
+    <div class="nav-right">
+        <button class="btn btn-outline" id="btnRefresh">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Actualizar
+        </button>
+        <a href="/download_csv" class="btn btn-solid">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Descargar CSV
+        </a>
+    </div>
+</nav>
+
+<main class="main">
+
+    <!-- Stats -->
+    <div class="stats" id="statsEl" style="display:none">
+        <div class="stat"><div class="stat-lbl">Registros</div><div class="stat-val blue" id="sTotal">—</div></div>
+        <div class="stat"><div class="stat-lbl">Columnas</div><div class="stat-val" id="sCols">—</div></div>
+        <div class="stat"><div class="stat-lbl">Página</div><div class="stat-val" id="sPage">—</div></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar" id="toolbarEl" style="display:none">
+        <div class="search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="searchIn" type="text" placeholder="Buscar en todas las columnas…">
+        </div>
+        <select id="pageSize">
+            <option value="15">15 por página</option>
+            <option value="25" selected>25 por página</option>
+            <option value="50">50 por página</option>
+            <option value="100">100 por página</option>
+        </select>
+        <span class="toolbar-right" id="filterInfo"></span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+
+        <!-- Skeleton -->
+        <div class="skeleton" id="skelEl">
+            <div class="skel-line" style="height:40px;margin-bottom:8px"></div>
+            <div class="skel-line"></div>
+            <div class="skel-line" style="opacity:.8"></div>
+            <div class="skel-line" style="opacity:.65"></div>
+            <div class="skel-line" style="opacity:.45"></div>
+            <div class="skel-line" style="opacity:.28"></div>
+        </div>
+
+        <!-- Empty -->
+        <div class="state-box" id="emptyEl" style="display:none">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <h3>Sin datos</h3>
+            <p>Procesa archivos en la página principal para generar el reporte.</p>
+        </div>
+
+        <!-- Table -->
+        <div id="tableEl" style="display:none;display:none;flex:1;flex-direction:column">
+            <div class="table-scroll">
+                <table>
+                    <thead><tr id="thead"></tr></thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+            <div class="pag-bar">
+                <span class="pag-info" id="pagInfo"></span>
+                <div class="pag-btns" id="pagBtns"></div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+/* ── state ────────────────────────── */
+var all=[], hdrs=[], filt=[], pg=1, pgSz=25, scol=-1, sdir=1, q='';
+
+/* ── refs ─────────────────────────── */
+var skelEl    = document.getElementById('skelEl');
+var emptyEl   = document.getElementById('emptyEl');
+var tableEl   = document.getElementById('tableEl');
+var theadEl   = document.getElementById('thead');
+var tbodyEl   = document.getElementById('tbody');
+var statsEl   = document.getElementById('statsEl');
+var toolbarEl = document.getElementById('toolbarEl');
+var navBadge  = document.getElementById('navBadge');
+var sTotal    = document.getElementById('sTotal');
+var sCols     = document.getElementById('sCols');
+var sPage     = document.getElementById('sPage');
+var pagInfo   = document.getElementById('pagInfo');
+var pagBtns   = document.getElementById('pagBtns');
+var filterInfo= document.getElementById('filterInfo');
+var searchIn  = document.getElementById('searchIn');
+var pageSzSel = document.getElementById('pageSize');
+
+/* ── helpers ──────────────────────── */
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function hi(s,q){
+    if(!q) return esc(s);
+    var parts = String(s||'').split(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'));
+    return parts.map(function(p){ return p.toLowerCase()===q.toLowerCase() ? '<mark style="background:#fef08a;border-radius:2px;padding:0 1px">'+esc(p)+'</mark>' : esc(p); }).join('');
+}
+
+/* ── load ─────────────────────────── */
+function load(){
+    skelEl.style.display  = 'block';
+    emptyEl.style.display = 'none';
+    tableEl.style.display = 'none';
+    statsEl.style.display = 'none';
+    toolbarEl.style.display = 'none';
+    navBadge.style.display = 'none';
+
+    fetch('/api/csv')
+    .then(function(r){return r.json();})
+    .then(function(d){
+        skelEl.style.display='none';
+        if(!d.exists || !d.rows || d.rows.length===0){ emptyEl.style.display='block'; return; }
+        hdrs=d.headers; all=d.rows; filt=all.slice(); pg=1; scol=-1;
+        sTotal.textContent=all.length; sCols.textContent=hdrs.length;
+        navBadge.textContent=all.length+' registros'; navBadge.style.display='';
+        statsEl.style.display='flex'; toolbarEl.style.display='flex';
+        tableEl.style.display='flex'; tableEl.style.flexDirection='column';
+        buildHead(); render();
+    })
+    .catch(function(){
+        skelEl.style.display='none'; emptyEl.style.display='block';
+        emptyEl.querySelector('h3').textContent='Error al cargar';
+    });
+}
+
+/* ── build header ─────────────────── */
+function buildHead(){
+    theadEl.innerHTML='';
+    var t0=document.createElement('th');
+    t0.className='th-row-num'; t0.textContent='#'; theadEl.appendChild(t0);
+    hdrs.forEach(function(h,i){
+        var th=document.createElement('th');
+        var label=h||'(vacío)';
+        th.title=label;
+        th.dataset.i=i;
+        th.innerHTML='<div class="th-content"><span class="th-label">'+esc(label)+'</span><span class="th-sort">↕</span></div>';
+        th.addEventListener('click',function(){ sortBy(i); });
+        theadEl.appendChild(th);
+    });
+}
+
+/* ── sort ─────────────────────────── */
+function sortBy(ci){
+    theadEl.querySelectorAll('th[data-i]').forEach(function(t){
+        t.classList.remove('asc','desc'); t.querySelector('.th-sort').textContent='↕';
+    });
+    if(scol===ci) sdir*=-1; else { scol=ci; sdir=1; }
+    var th=theadEl.querySelector('th[data-i="'+ci+'"]');
+    th.classList.add(sdir===1?'asc':'desc');
+    th.querySelector('.th-sort').textContent=sdir===1?'↑':'↓';
+    var k=hdrs[ci];
+    filt.sort(function(a,b){
+        var av=String(a[k]||''), bv=String(b[k]||'');
+        var an=parseFloat(av), bn=parseFloat(bv);
+        if(!isNaN(an)&&!isNaN(bn)) return (an-bn)*sdir;
+        return av.localeCompare(bv,undefined,{sensitivity:'base'})*sdir;
+    });
+    pg=1; render();
+}
+
+/* ── render ───────────────────────── */
+function render(){
+    var total=filt.length, start=(pg-1)*pgSz, end=Math.min(start+pgSz,total), slice=filt.slice(start,end);
+    tbodyEl.innerHTML='';
+    slice.forEach(function(row,ri){
+        var tr=document.createElement('tr');
+        var tdN=document.createElement('td'); tdN.className='td-row-num'; tdN.textContent=start+ri+1; tr.appendChild(tdN);
+        hdrs.forEach(function(h){
+            var td=document.createElement('td');
+            var val=String(row[h]||'');
+            td.title=val;
+            td.innerHTML=hi(val,q);
+            tr.appendChild(td);
+        });
+        tbodyEl.appendChild(tr);
+    });
+    /* stats */
+    var fromN=total===0?0:start+1;
+    sPage.textContent=fromN+'–'+end;
+    filterInfo.textContent=q ? filt.length+' de '+all.length+' resultados' : all.length+' registros';
+    pagInfo.textContent='Mostrando '+fromN+'–'+end+' de '+total+' registros';
+    buildPag(total);
+}
+
+/* ── pagination ───────────────────── */
+function buildPag(total){
+    var pages=Math.max(1,Math.ceil(total/pgSz));
+    pagBtns.innerHTML='';
+    function mk(lbl,p,on,dis){
+        var b=document.createElement('button'); b.className='pb'+(on?' on':''); b.disabled=dis;
+        b.innerHTML=lbl;
+        if(!dis&&!on) b.onclick=function(){pg=p;render();};
+        pagBtns.appendChild(b);
+    }
+    function dots(){ var s=document.createElement('span'); s.className='pb-dots'; s.textContent='…'; pagBtns.appendChild(s); }
+    mk('&#8249;',pg-1,false,pg===1);
+    var sp=Math.max(1,pg-2), ep=Math.min(pages,pg+2);
+    if(sp>1){mk(1,1,false,false); if(sp>2) dots();}
+    for(var i=sp;i<=ep;i++) mk(i,i,i===pg,false);
+    if(ep<pages){if(ep<pages-1) dots(); mk(pages,pages,false,false);}
+    mk('&#8250;',pg+1,false,pg===pages);
+}
+
+/* ── search ───────────────────────── */
+var dt;
+searchIn.addEventListener('input',function(){
+    clearTimeout(dt); dt=setTimeout(function(){
+        q=searchIn.value.trim().toLowerCase();
+        filt=q?all.filter(function(r){return Object.values(r).some(function(v){return String(v||'').toLowerCase().includes(q);});}):all.slice();
+        if(scol>=0){ var k=hdrs[scol]; filt.sort(function(a,b){ var av=String(a[k]||''),bv=String(b[k]||''),an=parseFloat(av),bn=parseFloat(bv); if(!isNaN(an)&&!isNaN(bn))return(an-bn)*sdir; return av.localeCompare(bv,undefined,{sensitivity:'base'})*sdir; }); }
+        pg=1; render();
+    },250);
+});
+
+/* ── page size ────────────────────── */
+pageSzSel.addEventListener('change',function(){ pgSz=parseInt(this.value); pg=1; render(); });
+
+/* ── refresh ──────────────────────── */
+document.getElementById('btnRefresh').addEventListener('click',function(){ searchIn.value=''; q=''; load(); });
+
+load();
+</script>
+</body>
+</html>
