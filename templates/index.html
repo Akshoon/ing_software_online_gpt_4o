@@ -1,326 +1,572 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Procesador de Bibliografía</title>
+    <title>Procesador de Bibliografía Académica</title>
+    <meta name="description" content="Sistema automatizado de gestión, extracción y validación de bibliografías académicas con IA.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ─── TOKENS ────────────────────────────────────────────────── */
+        :root {
+            --bg:            #0d1117;
+            --surface:       rgba(22, 27, 36, 0.88);
+            --border:        rgba(255,255,255,0.08);
+            --border-focus:  rgba(59,130,246,0.7);
+            --accent:        #3b82f6;
+            --accent-hover:  #2563eb;
+            --accent-light:  rgba(59,130,246,0.12);
+            --text-primary:  #e6edf3;
+            --text-secondary:#7d8fa1;
+            --text-muted:    #4a5568;
+            --success:       #22c55e;
+            --success-bg:    rgba(34,197,94,0.1);
+            --error:         #ef4444;
+            --error-bg:      rgba(239,68,68,0.1);
+            --radius-sm:     8px;
+            --radius-md:     14px;
+            --radius-lg:     20px;
+            --shadow:        0 8px 32px rgba(0,0,0,0.45);
+            --transition:    0.2s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-
-        .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-
-        form {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 48px 20px 64px;
+            overflow-x: hidden;
         }
 
-        label {
-            margin-top: 15px;
-            font-weight: bold;
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -20%;
+            right: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
         }
 
-        input[type="text"],
-        input[type="file"] {
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
+        .page-wrapper {
+            width: 100%;
+            max-width: 560px;
+            position: relative;
+            z-index: 1;
         }
 
-        input[type="file"] {
-            padding: 5px;
+        .card {
+            background: var(--surface);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+            transition: border-color var(--transition);
+        }
+        .card:hover { border-color: rgba(255,255,255,0.13); }
+
+        .card-header { margin-bottom: 6px; }
+        .card-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            color: var(--text-primary);
+        }
+        .card-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.5;
         }
 
-        button {
-            margin-top: 20px;
-            padding: 12px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
+        /* Flash */
+        .flash-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
         .flash {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-weight: 500;
+            animation: slideDown 0.25s ease;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .flash.success { background: var(--success-bg); border: 1px solid rgba(34,197,94,0.25); color: #4ade80; }
+        .flash.error   { background: var(--error-bg);   border: 1px solid rgba(239,68,68,0.25);  color: #f87171; }
+        .flash-icon { font-size: 16px; flex-shrink: 0; }
+
+        /* Form */
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+        label { font-size: 13px; font-weight: 500; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+        label .required { color: var(--accent); font-size: 11px; }
+
+        input[type="text"] {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+        }
+        input[type="text"]::placeholder { color: var(--text-muted); }
+        input[type="text"]:focus {
+            border-color: var(--border-focus);
+            background: rgba(59,130,246,0.05);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
         }
 
-        .flash.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .flash.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .loading {
-            display: none;
-            margin-top: 20px;
+        /* Drop zone */
+        .drop-zone {
+            border: 1.5px dashed var(--border);
+            border-radius: var(--radius-md);
+            padding: 28px 20px;
             text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: rgba(255,255,255,0.02);
+            position: relative;
+            overflow: hidden;
         }
+        .drop-zone::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.06) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+        .drop-zone:hover, .drop-zone.dragging {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+        .drop-zone:hover::before, .drop-zone.dragging::before { opacity: 1; }
 
-        .loading.show {
-            display: block;
+        .drop-icon {
+            width: 44px; height: 44px;
+            background: rgba(59,130,246,0.1);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 12px;
+            transition: background var(--transition);
         }
+        .drop-zone:hover .drop-icon { background: rgba(59,130,246,0.18); }
+        .drop-icon svg { color: var(--accent); }
+        .drop-label { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+        .drop-hint  { font-size: 12px; color: var(--text-muted); }
+        .drop-hint span { color: var(--accent); font-weight: 500; cursor: pointer; }
+        .drop-hint span:hover { text-decoration: underline; }
+
+        input[type="file"] { display: none; }
+
+        /* File list */
+        .file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+        .file-item {
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .file-type-badge {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+        .badge-pdf  { background: rgba(239,68,68,0.15);  color: #f87171; }
+        .badge-docx { background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .badge-csv  { background: rgba(34,197,94,0.15);  color: #4ade80; }
+
+        .file-info { flex: 1; min-width: 0; }
+        .file-name { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        .file-remove {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-muted); padding: 4px; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            transition: color var(--transition), background var(--transition);
+            flex-shrink: 0; margin-top: 0;
+        }
+        .file-remove:hover { color: var(--error); background: var(--error-bg); }
+
+        /* Loading */
+        .loading { display: none; margin-top: 16px; }
+        .loading.show { display: block; }
+        .loading-status { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(59,130,246,0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-label { font-size: 13px; color: var(--text-secondary); }
 
         .progress-bar {
-            width: 100%;
-            height: 20px;
-            background-color: #f0f0f0;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 10px;
+            width: 100%; height: 4px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 99px; overflow: hidden;
         }
-
         .progress-fill {
             height: 100%;
-            background-color: #4CAF50;
+            background: linear-gradient(90deg, var(--accent), #818cf8);
+            border-radius: 99px;
             width: 0%;
-            transition: width 0.3s ease;
+            transition: width 0.4s ease;
         }
 
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 2s linear infinite;
-            margin: 0 auto 10px;
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 10px 20px; border: none;
+            border-radius: var(--radius-sm); font-family: inherit;
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: all var(--transition); white-space: nowrap; text-decoration: none;
         }
+        .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 2px 12px rgba(59,130,246,0.35); }
+        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); box-shadow: 0 4px 20px rgba(59,130,246,0.45); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-ghost { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-secondary); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+        .btn-success { background: var(--success); color: #fff; box-shadow: 0 2px 12px rgba(34,197,94,0.3); }
+        .btn-success:hover:not(:disabled) { background: #16a34a; box-shadow: 0 4px 20px rgba(34,197,94,0.4); transform: translateY(-1px); }
+        .btn-success:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
+        .action-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
 
-            100% {
-                transform: rotate(360deg);
-            }
+        /* Success panel */
+        .success-panel {
+            background: var(--success-bg);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: var(--radius-md);
+            padding: 24px; margin-top: 20px;
+            animation: slideDown 0.3s ease;
         }
-
-        .success-options {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
+        .success-panel-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .success-icon {
+            width: 32px; height: 32px;
+            background: rgba(34,197,94,0.2);
             border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            margin-top: 20px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--success); font-size: 16px;
         }
-
-        .success-options h3 {
-            color: #155724;
-            margin-bottom: 10px;
-        }
-
-        .success-options p {
-            color: #155724;
-            margin-bottom: 20px;
-        }
-
-        .options-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .option-btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .download-btn {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .download-btn:hover {
-            background-color: #0056b3;
-        }
-
-        .continue-btn {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .continue-btn:hover {
-            background-color: #1e7e34;
-        }
+        .success-panel h3 { font-size: 15px; font-weight: 600; color: #4ade80; }
+        .success-panel p  { font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; }
+        .options-buttons  { display: flex; gap: 10px; flex-wrap: wrap; }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Procesador de Bibliografía</h1>
+<div class="page-wrapper">
+
+    <!-- ── Main Card: Procesar Archivos ──────────────────────────── -->
+    <div class="card">
+        <div class="card-header">
+            <h1>Procesar Bibliografía</h1>
+        </div>
+        <p class="card-subtitle">Sube archivos PDF o Word con programas de asignaturas. Puedes añadir hasta 20 archivos a la vez.</p>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        {% for category, message in messages %}
-        <div class="flash {{ 'success' if category == 'message' else 'error' }}">{{ message }}</div>
-        {% endfor %}
+        <div class="flash-list">
+            {% for category, message in messages %}
+            <div class="flash {{ 'success' if category == 'message' else 'error' }}">
+                <span class="flash-icon">{{ '✓' if category == 'message' else '✕' }}</span>
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
         {% endif %}
         {% endwith %}
+
         <form method="POST" enctype="multipart/form-data" id="pdfForm">
-            <label for="facultad">Facultad:</label>
-            <input type="text" id="facultad" name="facultad" required>
 
-            <label for="carrera">Carrera:</label>
-            <input type="text" id="carrera" name="carrera" required>
-
-            <label for="files">Archivos (PDF o Word):</label>
-            <input type="file" id="files" name="files" multiple accept=".pdf,.docx" required>
-
-            <button type="submit" id="processBtn">Procesar Archivos</button>
-        </form>
-
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Procesando archivos... Por favor espere.</p>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
+            <div class="form-group">
+                <label for="facultad">Facultad <span class="required">*</span></label>
+                <input type="text" id="facultad" name="facultad" placeholder="Ej. Ciencias Sociales" required>
             </div>
-        </div>
 
-        <hr>
-
-        <form method="POST" enctype="multipart/form-data" id="csvForm">
-            <label for="csv_file">Archivo CSV para importar:</label>
-            <input type="file" id="csv_file" name="csv_file" accept=".csv">
-
-            <button type="submit" id="importBtn">Importar CSV</button>
-        </form>
-
-        <div class="loading" id="csvLoading">
-            <div class="spinner"></div>
-            <p>Importando CSV... Por favor espere.</p>
-            <div class="progress-bar">
-                <div class="progress-fill" id="csvProgressFill"></div>
+            <div class="form-group">
+                <label for="carrera">Carrera <span class="required">*</span></label>
+                <input type="text" id="carrera" name="carrera" placeholder="Ej. Trabajo Social" required>
             </div>
-        </div>
+
+            <div class="form-group">
+                <label>Archivos PDF o Word <span class="required">*</span></label>
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <p class="drop-label">Arrastra y suelta tus archivos aquí</p>
+                    <p class="drop-hint">o <span id="browseFiles">haz clic para seleccionar</span> &nbsp;·&nbsp; máx. 50 MB c/u</p>
+                </div>
+                <input type="file" id="files" name="files" multiple accept=".pdf,.docx" required>
+                <div class="file-list" id="fileList"></div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="loading-status">
+                    <div class="spinner"></div>
+                    <span class="loading-label">Procesando archivos… Por favor espere.</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="action-row">
+                <button type="button" class="btn btn-ghost" id="clearPdfBtn">Limpiar</button>
+                <button type="submit" class="btn btn-primary" id="processBtn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Procesar archivos
+                </button>
+            </div>
+        </form>
 
         {% if show_options %}
-        <hr>
-        <div class="success-options">
-            <h3>¡Procesamiento completado exitosamente!</h3>
-            <p>¿Qué deseas hacer ahora?</p>
+        <div class="success-panel" id="successPanel">
+            <div class="success-panel-header">
+                <div class="success-icon">✓</div>
+                <h3>¡Procesamiento completado!</h3>
+            </div>
+            <p>Los archivos fueron procesados correctamente. ¿Qué deseas hacer ahora?</p>
             <div class="options-buttons">
-                <button onclick="downloadFile('{{ download_link }}', 'reporte_bibliografia.csv')"
-                    class="option-btn download-btn">Descargar Reporte CSV</button>
-                <button onclick="showUploadForm()" class="option-btn continue-btn">Añadir Más Libros</button>
+                <button onclick="downloadFile('{{ download_link }}', 'reporte_bibliografia.csv')" class="btn btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Descargar CSV
+                </button>
+                <button onclick="showUploadForm()" class="btn btn-ghost">Añadir más libros</button>
             </div>
         </div>
         {% endif %}
     </div>
 
-    <script>
-        // Función para mostrar/ocultar loading
-        function toggleLoading(formId, show) {
-            const loadingDiv = document.getElementById(formId === 'pdfForm' ? 'loading' : 'csvLoading');
-            const progressFill = document.getElementById(formId === 'pdfForm' ? 'progressFill' : 'csvProgressFill');
-            const button = document.getElementById(formId === 'pdfForm' ? 'processBtn' : 'importBtn');
+    <!-- ── Secondary Card: Importar CSV ───────────────────────────── -->
+    <div class="card">
+        <div class="card-header">
+            <h1>Importar CSV</h1>
+        </div>
+        <p class="card-subtitle">Importa un archivo CSV con registros bibliográficos existentes.</p>
 
-            if (show) {
-                loadingDiv.classList.add('show');
-                button.disabled = true;
-                button.textContent = formId === 'pdfForm' ? 'Procesando...' : 'Importando...';
+        <form method="POST" enctype="multipart/form-data" id="csvForm">
+            <div class="form-group">
+                <label>Archivo CSV</label>
+                <div class="drop-zone" id="dropZoneCsv">
+                    <div class="drop-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                    </div>
+                    <p class="drop-label">Selecciona un archivo CSV</p>
+                    <p class="drop-hint">o <span id="browseCsv">haz clic aquí</span></p>
+                </div>
+                <input type="file" id="csv_file" name="csv_file" accept=".csv">
+                <div class="file-list" id="csvFileList"></div>
+            </div>
 
-                // Simular progreso
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += Math.random() * 15;
-                    if (progress > 90) progress = 90;
-                    progressFill.style.width = progress + '%';
+            <div class="loading" id="csvLoading">
+                <div class="loading-status">
+                    <div class="spinner"></div>
+                    <span class="loading-label">Importando CSV… Por favor espere.</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="csvProgressFill"></div>
+                </div>
+            </div>
 
-                    if (!loadingDiv.classList.contains('show')) {
-                        clearInterval(interval);
-                    }
-                }, 500);
-            } else {
-                loadingDiv.classList.remove('show');
-                button.disabled = false;
-                button.textContent = formId === 'pdfForm' ? 'Procesar Archivos' : 'Importar CSV';
-                progressFill.style.width = '0%';
-            }
+            <div class="action-row">
+                <button type="submit" class="btn btn-success" id="importBtn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Importar CSV
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script>
+function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+    return (b/1048576).toFixed(1) + ' MB';
+}
+function getExt(name) { return name.split('.').pop().toUpperCase(); }
+function badgeClass(ext) {
+    if (ext==='PDF')  return 'badge-pdf';
+    if (ext==='DOCX') return 'badge-docx';
+    if (ext==='CSV')  return 'badge-csv';
+    return 'badge-docx';
+}
+
+function renderFileList(files, containerId) {
+    var list = document.getElementById(containerId);
+    list.innerHTML = '';
+    Array.from(files).forEach(function(file, i) {
+        var ext = getExt(file.name);
+        var item = document.createElement('div');
+        item.className = 'file-item';
+        item.innerHTML =
+            '<div class="file-type-badge ' + badgeClass(ext) + '">' + ext + '</div>' +
+            '<div class="file-info">' +
+                '<div class="file-name">' + file.name + '</div>' +
+                '<div class="file-meta">' + formatBytes(file.size) + '</div>' +
+            '</div>' +
+            '<button type="button" class="file-remove" title="Quitar">' +
+                '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+            '</button>';
+        list.appendChild(item);
+    });
+}
+
+var progressIntervals = {};
+function simulateProgress(fillId) {
+    var fill = document.getElementById(fillId);
+    var pct = 0;
+    return setInterval(function() {
+        pct += Math.random() * 12;
+        if (pct > 92) pct = 92;
+        fill.style.width = pct + '%';
+    }, 450);
+}
+
+function toggleLoading(formId, show) {
+    var isPdf   = (formId === 'pdfForm');
+    var loadDiv = document.getElementById(isPdf ? 'loading' : 'csvLoading');
+    var fillId  = isPdf ? 'progressFill' : 'csvProgressFill';
+    var btn     = document.getElementById(isPdf ? 'processBtn' : 'importBtn');
+
+    if (show) {
+        loadDiv.classList.add('show');
+        btn.disabled = true;
+        if (progressIntervals[formId]) clearInterval(progressIntervals[formId]);
+        progressIntervals[formId] = simulateProgress(fillId);
+    } else {
+        loadDiv.classList.remove('show');
+        btn.disabled = false;
+        if (progressIntervals[formId]) {
+            clearInterval(progressIntervals[formId]);
+            progressIntervals[formId] = null;
         }
+        setTimeout(function() { document.getElementById(fillId).style.width = '0%'; }, 500);
+    }
+}
 
-        // Función para descargar automáticamente el archivo
-        function downloadFile(url, filename) {
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+function initDropZone(zoneId, inputId, fileListId, browseLinkId) {
+    var zone  = document.getElementById(zoneId);
+    var input = document.getElementById(inputId);
+
+    zone.addEventListener('click', function() { input.click(); });
+    if (browseLinkId) {
+        var link = document.getElementById(browseLinkId);
+        if (link) link.addEventListener('click', function(e) { e.stopPropagation(); input.click(); });
+    }
+    input.addEventListener('change', function() {
+        if (input.files.length) renderFileList(input.files, fileListId);
+    });
+    zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('dragging'); });
+    zone.addEventListener('dragleave', function() { zone.classList.remove('dragging'); });
+    zone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        zone.classList.remove('dragging');
+        if (e.dataTransfer.files.length) {
+            try {
+                var dt = new DataTransfer();
+                Array.from(e.dataTransfer.files).forEach(function(f) { dt.items.add(f); });
+                input.files = dt.files;
+            } catch(err) {}
+            renderFileList(e.dataTransfer.files, fileListId);
         }
+    });
+}
 
-        // Event listeners para los formularios
-        document.getElementById('pdfForm').addEventListener('submit', function (e) {
-            toggleLoading('pdfForm', true);
-        });
+initDropZone('dropZone',    'files',    'fileList',    'browseFiles');
+initDropZone('dropZoneCsv', 'csv_file', 'csvFileList', 'browseCsv');
 
-        document.getElementById('csvForm').addEventListener('submit', function (e) {
-            toggleLoading('csvForm', true);
-        });
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.file-remove');
+    if (btn) { var item = btn.closest('.file-item'); if (item) item.remove(); }
+});
 
-        // Función para mostrar el formulario de subida
-        function showUploadForm() {
-            // Ocultar opciones de éxito
-            const successOptions = document.querySelector('.success-options');
-            if (successOptions) {
-                successOptions.style.display = 'none';
-            }
+var clearBtn = document.getElementById('clearPdfBtn');
+if (clearBtn) {
+    clearBtn.addEventListener('click', function() {
+        document.getElementById('fileList').innerHTML = '';
+        document.getElementById('files').value = '';
+    });
+}
 
-            // Limpiar formularios
-            document.getElementById('pdfForm').reset();
-            document.getElementById('csvForm').reset();
+document.getElementById('pdfForm').addEventListener('submit', function() { toggleLoading('pdfForm', true); });
+document.getElementById('csvForm').addEventListener('submit', function() { toggleLoading('csvForm', true); });
 
-            // Limpiar session storage para ocultar opciones
-            fetch('/clear_session', { method: 'POST' });
+function downloadFile(url, filename) {
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
 
-            // Scroll al formulario
-            document.getElementById('pdfForm').scrollIntoView({ behavior: 'smooth' });
-        }
+function showUploadForm() {
+    var panel = document.getElementById('successPanel');
+    if (panel) panel.style.display = 'none';
+    document.getElementById('pdfForm').reset();
+    document.getElementById('csvForm').reset();
+    document.getElementById('fileList').innerHTML = '';
+    document.getElementById('csvFileList').innerHTML = '';
+    fetch('/clear_session', { method: 'POST' });
+    document.getElementById('pdfForm').scrollIntoView({ behavior: 'smooth' });
+}
 
-        // Ocultar loading cuando se recarga la página (después de submit)
-        window.addEventListener('load', function () {
-            toggleLoading('pdfForm', false);
-            toggleLoading('csvForm', false);
-        });
-    </script>
+window.addEventListener('load', function() {
+    toggleLoading('pdfForm', false);
+    toggleLoading('csvForm', false);
+});
+</script>
 </body>
-
 </html>
