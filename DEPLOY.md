@@ -92,6 +92,36 @@ Tu aplicación ya estará accesible desde el navegador en el puerto 8012 de tu s
 
 ---
 
+### Paso 4.1: Habiliar el puerto 8012 en el Firewall (iptables / UFW)
+
+Si no puedes acceder desde tu navegador, es muy probable que el firewall de Ubuntu o de tu proveedor de nube esté bloqueando el puerto **8012**. Aquí tienes los comandos para abrirlo:
+
+#### Opción A: Usando `iptables` (Firewall tradicional de Linux)
+```bash
+# 1. Permitir el tráfico entrante TCP en el puerto 8012
+sudo iptables -I INPUT -p tcp --dport 8012 -j ACCEPT
+
+# 2. Guardar las reglas para que persistan tras reiniciar el servidor
+# En Ubuntu/Debian se utiliza iptables-persistent:
+sudo apt install -y iptables-persistent
+sudo netfilter-persistent save
+```
+
+#### Opción B: Usando `UFW` (Uncomplicated Firewall - el más común en Ubuntu)
+```bash
+# 1. Permitir el puerto 8012
+sudo ufw allow 8012/tcp
+
+# 2. Verificar el estado del firewall y las reglas activas
+sudo ufw status verbose
+```
+
+> [!IMPORTANT]
+> **¿Estás usando un proveedor de nube (AWS, GCP, Azure, Oracle Cloud, DigitalOcean)?**
+> Además de ejecutar `iptables` o `ufw` en la consola de Ubuntu, **debes abrir el puerto 8012 en el panel web de tu proveedor** (en la sección de *Security Groups*, *Firewall Rules* o *Listas de Seguridad* de tu VPC).
+
+---
+
 ### Paso 5 (Opcional): Configurar Nginx y HTTPS (Dominio y SSL)
 
 Si vas a usar un nombre de dominio (ej. `bibliografia.miuniversidad.edu`) y el puerto 80/443:

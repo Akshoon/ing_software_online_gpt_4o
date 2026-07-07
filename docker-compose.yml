@@ -8,8 +8,6 @@ services:
     env_file:
       - .env
     volumes:
-      # Persistencia del reporte CSV generado
-      - ./reporte_bibliografia.csv:/app/reporte_bibliografia.csv
       # Persistencia de la base de datos SQLite
       - app_db:/app/data
     healthcheck:
