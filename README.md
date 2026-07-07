@@ -86,15 +86,16 @@ python main.py
 ├── requirements.txt        # Dependencias
 ├── .env                    # Variables de entorno
 ├── src/
-│   ├── config/             # Gestión de configuración
-│   ├── database/           # Lógica de BD (Modelos, Repositorios, Migraciones)
-│   ├── models/             # Definiciones de objetos (ORM)
-│   ├── services/           # Lógica de negocio
+│   ├── config/             # Gestión de configuración singleton
+│   ├── domain/             # Núcleo: entidades, puertos y casos de uso
+│   ├── infrastructure/     # Adaptadores secundarios: DB, IA, Catálogo, Reportes
+│   ├── services/           # Lógica y estrategias auxiliares
 │   │   ├── ai_providers.py # Estrategias de IA (OpenAI/Gemini)
 │   │   ├── scraper_primo.py# Web Scraping
 │   │   └── ...
+│   ├── container.py        # Composition Root
 │   ├── gui.py              # Interfaz Gráfica
-│   └── processor.py        # Núcleo de procesamiento lógico
+│   └── processor.py        # Shim de compatibilidad
 ├── templates/              # Plantillas HTML para la Web App
 ├── tests/                  # Tests unitarios y de integración
 └── archivos/               # Carpeta por defecto para documentos

@@ -9,6 +9,4 @@ Estructura:
   container.py  — Composition root (ensamblaje de dependencias)
   gui.py        — Adaptador primario GUI (tkinter)
   processor.py  — Shim de compatibilidad hacia atrás
-  database/     — Shims de compatibilidad hacia atrás
-  models/       — Shims de compatibilidad hacia atrás
 """
