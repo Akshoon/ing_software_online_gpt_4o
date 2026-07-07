@@ -61,7 +61,7 @@ Interfaz amigable accesible desde el navegador.
 ```bash
 python app.py
 ```
-Accede a: `http://localhost:5000`
+Accede a: `http://localhost:8012`
 
 ### 2. Interfaz de Escritorio (GUI)
 Para usuarios que prefieren aplicaciones de ventana.

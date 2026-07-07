@@ -1,58 +1,133 @@
-# Guía de Despliegue (Deployment)
+# Guía de Despliegue en Producción
 
-Esta aplicación está lista para ser desplegada en plataformas de nube modernas. A continuación, se detallan los pasos para desplegar en **Railway** o **Render**, que son las opciones recomendadas por su facilidad de uso con Docker y Selenium.
+Esta guía explica paso a paso cómo levantar el sistema **Procesador de Bibliografía Académica** en un servidor **Ubuntu** utilizando **Docker y Docker Compose** (método recomendado), así como en plataformas cloud como Railway o Render.
 
-## ⚠️ Consideración Importante: Base de Datos
+---
 
-La aplicación utiliza **SQLite** por defecto.
-- **En la nube (Render/Railway/Heroku/Vercel):** El sistema de archivos suele ser *efímero*. Esto significa que si la aplicación se reinicia (por inactividad o actualización), **se borrará la base de datos** y los reportes generados.
-- **Solución:**
-    - **Opción A (Recomendada para producción):** Configurar un volumen persistente (Railway y Render lo soportan) para montar la carpeta donde se guarda `bibliografia.db`.
-    - **Opción B (Uso temporal):** Si solo necesitas procesar arquivos y descargar el CSV inmediatamente, no necesitas hacer nada extra.
+## 🚀 Despliegue en Servidor Ubuntu (Recomendado)
 
-## Opción 1: Despliegue en Railway (Recomendado)
+El proyecto ya está completamente dockerizado con un `Dockerfile` optimizado multi-stage y un `docker-compose.yml` que configura **Gunicorn (WSGI para producción)** y volúmenes para la persistencia de la base de datos (`sqlite`) y reportes CSV.
 
-Railway detecta automáticamente el `Dockerfile`.
+### Paso 1: Instalar Docker y Docker Compose en Ubuntu
+Conéctate por SSH a tu servidor Ubuntu y ejecuta los siguientes comandos para instalar Docker y el plugin oficial de Compose:
 
-1.  Crea una cuenta en [railway.app](https://railway.app/).
-2.  Instala el CLI de Railway (opcional) o sube tu código a GitHub.
-3.  **Nuevo Proyecto** -> **Deploy from GitHub repo**.
-4.  Selecciona este repositorio.
-5.  **Variables de Entorno**:
-    Agrega las siguientes variables en la pestaña "Variables":
-    - `OPENAI_API_KEY`: Tu clave de OpenAI.
-    - `GEMINI_API_KEY`: Tu clave de Gemini.
-    - `PORT`: 5000 (Railway suele asignarlo automáticamente, pero es bueno definirlo).
-6.  Railway construirá la imagen usando el Dockerfile incluido (que instala Python + Chrome).
+```bash
+# 1. Actualizar el sistema
+sudo apt update && sudo apt upgrade -y
 
-## Opción 2: Despliegue en Render
+# 2. Instalar Docker y herramientas necesarias
+sudo apt install -y curl git docker.io docker-compose-v2
 
-1.  Crea una cuenta en [render.com](https://render.com/).
-2.  **New +** -> **Web Service**.
-3.  Conecta tu repositorio de GitHub.
-4.  **Runtime**: Selecciona **Docker**.
-5.  **Variables de Entorno**:
-    - `OPENAI_API_KEY`: ...
-    - `GEMINI_API_KEY`: ...
-6.  **Disk (Opcional)**: Si quieres persistencia, añade un disco y móntalo en `/app/archivos` o donde esté tu DB.
+# 3. Habilitar e iniciar el servicio de Docker
+sudo systemctl enable docker
+sudo systemctl start docker
 
-## Prueba Local con Docker
+# 4. (Opcional) Agregar tu usuario actual al grupo docker para no usar 'sudo' en cada comando
+sudo usermod -aG docker $USER
+newgrp docker
+```
 
-Si tienes Docker instalado en tu máquina, puedes probar la imagen antes de subirla:
+### Paso 2: Clonar el repositorio y configurar entorno
+Clona el proyecto en tu servidor (o sube tus archivos por SSH/SFTP) y prepara las variables de entorno:
 
-1.  **Construir imagen**:
-    ```bash
-    docker build -t bibliografia-app .
-    ```
+```bash
+# 1. Clonar el proyecto (reemplaza con la URL de tu repositorio)
+git clone <URL_DE_TU_REPOSITORIO> bibliografia_app
+cd bibliografia_app
 
-2.  **Correr contenedor**:
-    ```bash
-    docker run -p 5000:5000 --env-file .env bibliografia-app
-    ```
-    Visita `http://localhost:5000`.
+# 2. Crear el archivo .env desde el ejemplo
+cp .env.example .env
 
-## Notas Técnicas
+# 3. Editar el archivo .env con tu editor favorito (nano o vim)
+nano .env
+```
 
-- **Chrome/Selenium**: El `Dockerfile` ya incluye la instalación de Google Chrome y las dependencias necesarias.
-- **Memoria**: Selenium consume bastante memoria RAM. En los planes gratuitos de nube, podría fallar si se procesan muchos archivos simultáneamente.
-- **Tiempo de Espera**: El scraping puede tardar. Asegúrate de configurar los timeouts de la plataforma a un valor alto (ej. 300 segundos) si es posible.
+**Configuración obligatoria en tu archivo `.env`:**
+```ini
+# API Keys de Inteligencia Artificial
+OPENAI_API_KEY=tu_clave_de_openai_aqui
+GEMINI_API_KEY=tu_clave_de_gemini_aqui
+AI_PROVIDER=gemini
+GEMINI_MODEL=gemini-3.5-flash
+
+# Credenciales de acceso web (¡IMPORTANTE CAMBIAR EN PRODUCCIÓN!)
+SECRET_KEY=clave-secreta-ultra-segura-aleatoria-para-produccion
+APP_USER=admin
+APP_PASSWORD=tu_contraseña_segura_aqui
+```
+*(Guarda en nano presionando `CTRL + O`, luego `Enter`, y sal con `CTRL + X`).*
+
+---
+
+### Paso 3: Levantar la aplicación con Docker Compose
+
+Para construir y levantar el contenedor en segundo plano (*detached mode*), ejecuta:
+
+```bash
+docker compose up -d --build
+```
+
+#### ¿Qué está sucediendo bajo el capó?
+1. **Construcción Multi-stage:** Se compilarán las dependencias en una imagen limpia y compacta.
+2. **Servidor Gunicorn:** La aplicación se ejecutará con `gunicorn` (2 workers, 4 threads, timeout de 120s para procesar PDFs sin que se corte la conexión).
+3. **Volúmenes Persistentes:** Se crearán automáticamente los volúmenes de Docker para que tu base de datos SQLite (`/app/data`) y el archivo CSV (`reporte_bibliografia.csv`) **nunca se borren**, incluso si reinicias o actualizas el contenedor.
+4. **Healthcheck:** El contenedor comprobará periódicamente que el endpoint `/login` responde correctamente.
+
+---
+
+### Paso 4: Verificar que todo está funcionando
+
+Puedes comprobar el estado y los registros de tu aplicación con:
+
+```bash
+# Ver el estado de los contenedores y el healthcheck
+docker compose ps
+
+# Ver los logs en tiempo real (útil para depurar)
+docker compose logs -f web
+```
+
+Tu aplicación ya estará accesible desde el navegador en el puerto 8012 de tu servidor:
+👉 **`http://<IP_DE_TU_SERVIDOR_UBUNTU>:8012`**
+
+---
+
+### Paso 5 (Opcional): Configurar Nginx y HTTPS (Dominio y SSL)
+
+Si vas a usar un nombre de dominio (ej. `bibliografia.miuniversidad.edu`) y el puerto 80/443:
+
+1. El proyecto ya incluye un archivo `nginx.conf` preconfigurado con soporte para subida de archivos grandes (100 MB) y timeouts largos (120s).
+2. Para levantar la aplicación junto con el proxy Nginx en el puerto 80, utiliza el perfil de producción:
+
+```bash
+docker compose --profile production up -d
+```
+*(Asegúrate de tener los puertos 80 y 443 abiertos en el firewall de tu servidor: `sudo ufw allow 80,443/tcp`).*
+
+---
+
+## 🛠️ Mantenimiento y Comandos Útiles
+
+| Acción | Comando |
+| :--- | :--- |
+| **Detener la aplicación** | `docker compose down` |
+| **Reiniciar la aplicación** | `docker compose restart` |
+| **Actualizar el código (tras un git pull)** | `docker compose up -d --build` |
+| **Ver uso de recursos (RAM/CPU)** | `docker stats` |
+| **Entrar a la consola del contenedor** | `docker exec -it bibliografia_app bash` |
+
+---
+
+## ☁️ Despliegue en Plataformas Cloud (Alternativa)
+
+### Railway
+1. Crea un nuevo proyecto en [railway.app](https://railway.app/) desde tu repositorio de GitHub.
+2. En la pestaña **Variables**, agrega: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `APP_USER`, `APP_PASSWORD` y `SECRET_KEY`.
+3. Railway detectará el `Dockerfile` y levantará el contenedor de forma automática.
+*(Nota: Para que la base de datos SQLite persista en Railway, debes adjuntar un **Volume** y montarlo en `/app/data`).*
+
+### Render
+1. En [render.com](https://render.com/), selecciona **New + -> Web Service** conectado a tu repo.
+2. Selecciona **Runtime: Docker**.
+3. Configura las variables de entorno (`APP_USER`, `APP_PASSWORD`, `SECRET_KEY`, API Keys).
+4. Para persistencia, agrega un **Persistent Disk** montado en `/app/data`.

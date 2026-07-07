@@ -23,7 +23,7 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=5000
+    PORT=8012
 
 WORKDIR /app
 
@@ -47,15 +47,15 @@ RUN adduser --disabled-password --gecos '' appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
-EXPOSE 5000
+EXPOSE 8012
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/login')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8012/login')" || exit 1
 
 # Gunicorn para producción
 CMD ["gunicorn", \
-     "--bind", "0.0.0.0:5000", \
+     "--bind", "0.0.0.0:8012", \
      "--workers", "2", \
      "--threads", "4", \
      "--timeout", "120", \
