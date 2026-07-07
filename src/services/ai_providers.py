@@ -34,7 +34,8 @@ Versión: 2.1 (con soporte multi-proveedor)
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 import openai
-import google.generativeai as genai
+from google import genai
+from google.genai import types as genai_types
 from src.config import OpenAIConfig
 import random
 
@@ -84,11 +85,14 @@ class OpenAIStrategy(AIProviderStrategy):
         Args:
             api_key: API key de OpenAI (opcional, usa config si no se provee)
         """
+        import os
         if api_key:
             self.api_key = api_key
+            self.model_name = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
         else:
             config = OpenAIConfig()
             self.api_key = config.get_api_key()
+            self.model_name = config.get_model()
         
         openai.api_key = self.api_key
     
@@ -107,7 +111,7 @@ class OpenAIStrategy(AIProviderStrategy):
         """
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
                 temperature=temperature
@@ -117,7 +121,7 @@ class OpenAIStrategy(AIProviderStrategy):
             raise Exception(f"Error en OpenAI: {str(e)}")
     
     def get_provider_name(self) -> str:
-        return "OpenAI"
+        return f"OpenAI ({self.model_name})"
 
 
 class GeminiStrategy(AIProviderStrategy):
@@ -127,83 +131,75 @@ class GeminiStrategy(AIProviderStrategy):
     PATRÓN: Strategy (Estrategia Concreta)
     PRINCIPIO: Single Responsibility
     
-    Usa Gemini 1.5 Flash para respuestas rápidas y eficientes.
+    Usa el modelo definido en GEMINI_MODEL (por defecto gemini-2.5-flash)
+    con el nuevo SDK google.genai.
+    Fuerza response_mime_type='application/json' para garantizar JSON válido.
     """
+
+    DEFAULT_MODEL_NAME = 'gemini-2.5-flash'
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, json_mode: bool = True):
         """
         Args:
-            api_key: API key de Gemini (opcional, usa config si no se provee)
+            api_key: API key de Gemini (opcional, usa variable de entorno si no se provee)
+            json_mode: Si True, fuerza respuesta en JSON válido (evita Markdown/texto)
         """
-        if api_key:
-            self.api_key = api_key
-        else:
-            config = OpenAIConfig()
-            # Intentar obtener de variable de entorno
-            import os
-            self.api_key = os.getenv('GEMINI_API_KEY')
-            if not self.api_key:
-                raise ValueError("GEMINI_API_KEY no está configurada")
-        
-        genai.configure(api_key=self.api_key)
-        
-        # Usar modelo específico solicitado
-        self.model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        import os
+        self.api_key = api_key or os.getenv('GEMINI_API_KEY')
+        if not self.api_key:
+            raise ValueError("GEMINI_API_KEY no está configurada")
+
+        self.model_name = os.getenv('GEMINI_MODEL', self.DEFAULT_MODEL_NAME)
+        self._json_mode = json_mode
+        # Nuevo SDK: cliente estático por api_key
+        self._client = genai.Client(api_key=self.api_key)
     
     def generate_completion(self, prompt: str, max_tokens: int = 2000,
-                          temperature: float = 0.7) -> str:
+                            temperature: float = 0.7) -> str:
         """
         Genera respuesta usando Gemini con reintentos para rate limits.
+        Con json_mode=True fuerza response_mime_type='application/json'.
         """
         import time
-        
+
         max_retries = 3
-        base_delay = 2  # Reduced base delay for retries
-        
-        # Rate Limiter proactivo eliminado a petición del usuario
-        # print("⏳ Esperando 8s para respetar cuota de Gemini (8 RPM)...")
-        # time.sleep(8)
-        
+        base_delay = 2
+
+        config_kwargs = dict(
+            temperature=temperature,
+            max_output_tokens=max_tokens,
+        )
+        if self._json_mode:
+            config_kwargs['response_mime_type'] = 'application/json'
+
+        config = genai_types.GenerateContentConfig(**config_kwargs)
+
         for attempt in range(max_retries):
             try:
-                generation_config = {
-                    'temperature': temperature,
-                    'max_output_tokens': max_tokens,
-                }
-                
-                response = self.model.generate_content(
-                    prompt,
-                    generation_config=generation_config
+                response = self._client.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt,
+                    config=config,
                 )
-                
+
                 # Verificar si la respuesta está bloqueada o vacía
-                if not response.parts:
-                    feedback = "N/A"
-                    if hasattr(response, 'prompt_feedback'):
-                        feedback = str(response.prompt_feedback)
+                if not response.text:
+                    feedback = getattr(response, 'prompt_feedback', 'N/A')
                     raise Exception(f"Respuesta bloqueada o vacía. Feedback: {feedback}")
-                
-                # Intentar acceder al texto
-                try:
-                    return response.text
-                except ValueError as e:
-                    if hasattr(response, 'prompt_feedback'):
-                        raise Exception(f"Contenido bloqueado: {response.prompt_feedback}")
-                    raise Exception(f"No se pudo obtener texto: {str(e)}")
-                    
+
+                return response.text
+
             except Exception as e:
                 error_str = str(e)
-                # Verificar si es un error de cuota o rate limit (429)
                 if "429" in error_str or "TooManyRequests" in error_str or "quota" in error_str.lower():
                     if attempt < max_retries - 1:
-                        delay = base_delay * (2 ** attempt)  # Exponential backoff: 2, 4, 8...
+                        delay = base_delay * (2 ** attempt)
                         print(f"[WARN] Rate limit en Gemini. Reintentando en {delay}s... (Intento {attempt+1}/{max_retries})")
                         time.sleep(delay)
                         continue
-                
-                # Si no es rate limit o se acabaron los intentos, propagar error
+
                 raise Exception(f"Error en Gemini: {str(e)}")
-    
+
     def get_provider_name(self) -> str:
         return "Gemini"
 

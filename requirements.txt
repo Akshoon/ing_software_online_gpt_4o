@@ -11,5 +11,6 @@ python-docx
 pymupdf4llm
 pymupdf_layout
 mammoth
-google-generativeai
+google-genai
 gunicorn
+json-repair
