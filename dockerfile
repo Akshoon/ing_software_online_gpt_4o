@@ -15,7 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
-    pip install --prefix=/install --no-cache-dir -r requirements.txt
+    pip install --prefix=/install --no-cache-dir -r requirements.txt && \
+    # pip-audit para A06 (escaneo de CVEs en dependencias)
+    pip install --prefix=/install --no-cache-dir pip-audit
 
 
 # ── Stage 2: imagen final ─────────────────────────────────────────
@@ -28,12 +30,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Dependencias mínimas de runtime
+# curl y wget se incluyen para que el script de pruebas de seguridad (trivy) pueda instalarse
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl3 \
     ca-certificates \
+    curl \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar paquetes instalados desde el stage builder
+# Instalar trivy para A06 (escaneo de CVEs en imagen)
+RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+    | sh -s -- -b /usr/local/bin 2>/dev/null || \
+    echo "trivy install failed — escaneo manual necesario"
+
+# Copiar paquetes instalados desde el stage builder (incluye pip-audit)
 COPY --from=builder /install /usr/local
 
 # Copiar código de la aplicación

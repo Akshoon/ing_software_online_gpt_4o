@@ -25,7 +25,17 @@ BASE="http://${HOST}:${PORT}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-# Credenciales (sobrescribe si tu .env usa valores distintos)
+# ── Credenciales ──────────────────────────────────────────────────────────────
+# Prioridad: variable de entorno del shell > .env del proyecto > fallback por defecto
+if [[ -z "$APP_USER" || -z "$APP_PASSWORD" ]]; then
+    ENV_FILE="${PROJECT_ROOT}/.env"
+    if [[ -f "$ENV_FILE" ]]; then
+        _env_user=$(grep -E "^APP_USER=" "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '\r\n')
+        _env_pass=$(grep -E "^APP_PASSWORD=" "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '\r\n')
+        [[ -n "$_env_user" ]] && APP_USER="$_env_user"
+        [[ -n "$_env_pass" ]] && APP_PASSWORD="$_env_pass"
+    fi
+fi
 APP_USER="${APP_USER:-admin}"
 APP_PASSWORD="${APP_PASSWORD:-admin1234}"
 
