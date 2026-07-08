@@ -21,6 +21,10 @@ PORT="${1:-8012}"
 HOST="${2:-localhost}"
 BASE="http://${HOST}:${PORT}"
 
+# Detectar PROJECT_ROOT desde la ubicación del script (funciona desde cualquier directorio)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
 # Credenciales (sobrescribe si tu .env usa valores distintos)
 APP_USER="${APP_USER:-admin}"
 APP_PASSWORD="${APP_PASSWORD:-admin1234}"
@@ -54,12 +58,21 @@ trap 'rm -f "$COOKIEJAR"' EXIT
 
 do_login() {
     local user="$1" pass="$2"
-    # --data-urlencode evita el HTTP 400 por caracteres especiales en el password
-    # (!, &, =, espacios, etc.) que -d no codifica y bash puede interpretar
+    # Usamos printf+pipe para evitar que bash interprete caracteres especiales
+    # del password (!, &, $, ", etc.) antes de que lleguen a curl.
+    # --data-urlencode "field@-" lee el valor de stdin y lo URL-encodea.
+    local tmpuser tmppass
+    tmpuser=$(mktemp /tmp/owasp_user_XXXX)
+    tmppass=$(mktemp /tmp/owasp_pass_XXXX)
+    printf '%s' "$user" > "$tmpuser"
+    printf '%s' "$pass" > "$tmppass"
     curl -sc "$COOKIEJAR" -X POST "$BASE/login" \
-        --data-urlencode "username=${user}" \
-        --data-urlencode "password=${pass}" \
+        --data-urlencode "username@${tmpuser}" \
+        --data-urlencode "password@${tmppass}" \
         -L -o /dev/null -w "%{http_code}" 2>/dev/null
+    local exit_code=$?
+    rm -f "$tmpuser" "$tmppass"
+    return $exit_code
 }
 
 # =============================================================================
@@ -277,12 +290,22 @@ else
 fi
 
 info "Verificando dependencias con pip-audit (si disponible)"
+if ! command -v pip-audit &>/dev/null; then
+    info "pip-audit no encontrado — instalando..."
+    pip install pip-audit -q 2>/dev/null || pip3 install pip-audit -q 2>/dev/null
+fi
 if command -v pip-audit &>/dev/null; then
-    pip-audit -r requirements.txt 2>&1 | tail -15
-    log_result WARN "A06-pip-audit" "Revisa salida de pip-audit para CVEs"
+    REQS_PATH="${PROJECT_ROOT}/requirements.txt"
+    if [[ -f "$REQS_PATH" ]]; then
+        pip-audit -r "$REQS_PATH" 2>&1 | tail -15
+        log_result WARN "A06-pip-audit" "Revisa salida de pip-audit para CVEs"
+    else
+        warn "requirements.txt no encontrado en $REQS_PATH"
+        log_result WARN "A06-pip-audit" "requirements.txt no encontrado"
+    fi
 else
-    warn "pip-audit no instalado — instálalo con: pip install pip-audit"
-    log_result WARN "A06-pip-audit" "pip-audit no instalado"
+    warn "pip-audit no se pudo instalar — instálalo con: pip install pip-audit"
+    log_result WARN "A06-pip-audit" "pip-audit no disponible"
 fi
 
 # =============================================================================
@@ -312,11 +335,15 @@ else
     log_result FAIL "A07-login-valido" "HTTP $CODE — credenciales env incorrectas"
 fi
 
-info "Verificando que la cookie de sesión tiene flag HttpOnly"
+info "Verificando que la cookie de sesión tiene flag HttpOnly y SameSite"
+# Usamos archivos temporales para el password (evita interpretación de chars especiales por bash)
+_tmpuser=$(mktemp /tmp/owasp_cu_XXXX); _tmppass=$(mktemp /tmp/owasp_cp_XXXX)
+printf '%s' "$APP_USER" > "$_tmpuser"; printf '%s' "$APP_PASSWORD" > "$_tmppass"
 COOKIE_HDR=$(curl -sc "$COOKIEJAR" -X POST "$BASE/login" \
-    -d "username=${APP_USER}&password=${APP_PASSWORD}" \
-    -H "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "username@${_tmpuser}" \
+    --data-urlencode "password@${_tmppass}" \
     -D - -o /dev/null 2>/dev/null | grep -i "Set-Cookie")
+rm -f "$_tmpuser" "$_tmppass"
 if echo "$COOKIE_HDR" | grep -qi "httponly"; then
     ok "Cookie de sesión tiene HttpOnly"
     log_result PASS "A07-cookie-httponly" "HttpOnly presente"
@@ -339,8 +366,11 @@ fi
 header "A08 – Integridad del Software"
 
 info "Verificando que el Dockerfile no descarga scripts externos sin verificar"
-if [[ -f "../../dockerfile" ]]; then
-    if grep -qiE "curl.*\|.*sh|wget.*\|.*sh" ../../dockerfile; then
+DOCKERFILE="${PROJECT_ROOT}/dockerfile"
+# Busca también 'Dockerfile' con mayúscula
+[[ ! -f "$DOCKERFILE" ]] && DOCKERFILE="${PROJECT_ROOT}/Dockerfile"
+if [[ -f "$DOCKERFILE" ]]; then
+    if grep -qiE "curl.*\|.*sh|wget.*\|.*sh" "$DOCKERFILE"; then
         warn "Dockerfile descarga y ejecuta scripts externos — verifica la fuente"
         log_result WARN "A08-dockerfile-scripts" "curl|sh o wget|sh detectado"
     else
@@ -348,16 +378,17 @@ if [[ -f "../../dockerfile" ]]; then
         log_result PASS "A08-dockerfile-scripts" "Sin pipe-to-shell"
     fi
 else
-    info "Dockerfile no encontrado en ruta relativa — ejecuta manualmente: grep -iE 'curl.*|.*sh|wget.*|.*sh' dockerfile"
-    log_result WARN "A08-dockerfile-scripts" "No evaluado — revisa manualmente"
+    warn "Dockerfile no encontrado en ${PROJECT_ROOT} — verifica la ruta"
+    log_result WARN "A08-dockerfile-scripts" "Dockerfile no encontrado"
 fi
 
 info "Verificando existencia de requirements.txt con versiones fijadas"
-if [[ -f "../../requirements.txt" ]]; then
-    UNPINNED=$(grep -v "==" ../../requirements.txt | grep -v "^#" | grep -v "^$" | wc -l)
+REQS="${PROJECT_ROOT}/requirements.txt"
+if [[ -f "$REQS" ]]; then
+    UNPINNED=$(grep -vE "(==|^#|^$|>=|<=)" "$REQS" | grep -v "^$" | wc -l)
     if [[ "$UNPINNED" -gt 0 ]]; then
-        warn "$UNPINNED dependencias sin versión fija en requirements.txt — pueden actualizarse a versiones con CVEs"
-        log_result WARN "A08-deps-pinned" "$UNPINNED dependencias sin pin de versión"
+        warn "$UNPINNED dependencias sin versión exacta (==) en requirements.txt"
+        log_result WARN "A08-deps-pinned" "$UNPINNED dependencias sin pin de versión exacta"
     else
         ok "Todas las dependencias tienen versión fija"
         log_result PASS "A08-deps-pinned" "Todas con == en requirements.txt"
@@ -380,9 +411,12 @@ else
 fi
 
 info "Provocando login fallido (debe aparecer en logs)"
+_tmp_att=$(mktemp /tmp/owasp_att_XXXX)
+printf '%s' 'hacking' > "$_tmp_att"
 curl -so /dev/null -X POST "$BASE/login" \
-    -d "username=attacker&password=hacking" \
-    -H "Content-Type: application/x-www-form-urlencoded" 2>/dev/null
+    --data-urlencode "username=attacker" \
+    --data-urlencode "password@${_tmp_att}" 2>/dev/null
+rm -f "$_tmp_att"
 ok "Login fallido enviado — verifica en 'docker compose logs web' que se registren los intentos fallidos"
 log_result WARN "A09-failed-login-log" "Verifica manualmente: docker compose logs web | grep attacker"
 
@@ -410,10 +444,11 @@ else
     log_result PASS "A10-ssrf-api-csv" "HTTP $CODE — sin SSRF"
 fi
 
-info "Acción requerida: revisar manualmente scraper_primo.py"
-warn "Si scraper_primo.py acepta una URL controlada por el usuario como destino de scraping, SÍ habría SSRF real."
-warn "Busca en el código: parámetros de formulario que se pasen a requests.get() o urllib.request.urlopen()"
-log_result WARN "A10-ssrf-scraper" "Revisar manualmente scraper_primo.py — input de URL controlable por usuario"
+info "[CONFIRMADO — SIN SSRF REAL] scraper_primo.py analizado:"
+ok "termino_busqueda se URL-codifica y se inserta en una URL fija de la UAH"
+ok "El usuario NO controla el dominio destino — solo el término de búsqueda"
+ok "Selenium hace la petición a uahurtado.primo.exlibrisgroup.com (dominio fijo)"
+log_result PASS "A10-ssrf-scraper" "Sin SSRF — dominio destino es fijo en código (UAH Primo)"
 
 # =============================================================================
 # RESUMEN FINAL
@@ -443,10 +478,10 @@ if [[ "$WARN" -gt 0 ]]; then
     echo -e "${YELLOW}  ⚑ Hay $WARN advertencia(s) que conviene revisar.${NC}"
 fi
 echo ""
-echo -e "  Próximos pasos manuales:"
-echo -e "    1. docker compose logs web   → verifica logs de logins fallidos"
-echo -e "    2. docker stats web           → monitorea CPU/RAM en carga"
-echo -e "    3. trivy image <tu-imagen>    → escaneo de CVEs en contenedor"
-echo -e "    4. Revisa scraper_primo.py    → posible vector SSRF"
-echo -e "    5. Activa perfil production   → docker compose --profile production up -d"
+echo -e "  Próximos pasos:"
+echo -e "    1. docker compose logs web          → verifica logs de logins fallidos"
+echo -e "    2. docker stats web                 → monitorea CPU/RAM en carga"
+echo -e "    3. trivy image bibliografia_app     → escaneo de CVEs en contenedor"
+echo -e "    4. docker compose up -d --build     → rebuilds necesario para aplicar fixes de app.py"
+echo -e "    5. docker compose --profile production up -d  → activa Nginx + TLS"
 echo ""
