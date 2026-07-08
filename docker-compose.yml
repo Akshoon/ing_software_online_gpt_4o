@@ -36,19 +36,18 @@ services:
       start_period: 60s
 
   # ── Nginx con TLS ─────────────────────────────────────────────────────────
+  # Solo se activa con: docker compose --profile production up -d
   # Genera cert auto-firmado al arrancar si no existe.
-  # Para producción: monta tus certs reales en /etc/nginx/ssl/
   nginx:
     image: nginx:alpine
     container_name: bibliografia_nginx
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"    # HTTP → redirige a HTTPS
+      - "8443:443"   # HTTPS con cert auto-firmado
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - nginx_ssl:/etc/nginx/ssl          # cert persistente
-    # Genera cert auto-firmado si no existe y luego inicia nginx
+      - nginx_ssl:/etc/nginx/ssl
     entrypoint: >
       sh -c "
         if [ ! -f /etc/nginx/ssl/server.crt ]; then
