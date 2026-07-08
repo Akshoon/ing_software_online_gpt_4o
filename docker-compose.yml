@@ -1,4 +1,20 @@
 services:
+
+  # ── Redis — almacenamiento compartido para Flask-Limiter (A04) ──────────────
+  # Los 2 workers de Gunicorn comparten el mismo contador de intentos en /login.
+  # Sin Redis, cada worker tiene su propio contador (límite efectivo × 2 workers).
+  redis:
+    image: redis:7-alpine
+    container_name: bibliografia_redis
+    restart: unless-stopped
+    command: redis-server --save "" --appendonly no   # solo en memoria, sin disco
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    # Redis NO expone puerto al host (solo accesible dentro de la red Docker)
+
   web:
     build: .
     container_name: bibliografia_app
@@ -7,9 +23,15 @@ services:
       - "8012:8012"
     env_file:
       - .env
+    environment:
+      # URL de Redis para Flask-Limiter (sobreescribe la variable si ya existe en .env)
+      REDIS_URL: "redis://redis:6379"
     volumes:
       # Persistencia de la base de datos SQLite
       - app_db:/app/data
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8012/login')"]
@@ -18,7 +40,7 @@ services:
       retries: 3
       start_period: 20s
 
-  # Nginx como reverse proxy (opcional pero recomendado)
+  # Nginx como reverse proxy (opcional pero recomendado) ──────────────────────
   nginx:
     image: nginx:alpine
     container_name: bibliografia_nginx

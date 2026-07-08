@@ -54,9 +54,11 @@ trap 'rm -f "$COOKIEJAR"' EXIT
 
 do_login() {
     local user="$1" pass="$2"
+    # --data-urlencode evita el HTTP 400 por caracteres especiales en el password
+    # (!, &, =, espacios, etc.) que -d no codifica y bash puede interpretar
     curl -sc "$COOKIEJAR" -X POST "$BASE/login" \
-        -d "username=${user}&password=${pass}" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
+        --data-urlencode "username=${user}" \
+        --data-urlencode "password=${pass}" \
         -L -o /dev/null -w "%{http_code}" 2>/dev/null
 }
 
@@ -138,7 +140,7 @@ done
 # =============================================================================
 header "A03 – Inyección"
 
-info "Probando inyección por nombre de archivo malicioso en /upload"
+info "Probando inyección por fórmulas CSV en POST / (ruta real de subida)"
 # Primero obtenemos sesión
 rm -f "$COOKIEJAR"
 LOGIN_CODE=$(do_login "$APP_USER" "$APP_PASSWORD")
@@ -147,6 +149,7 @@ if [[ "$LOGIN_CODE" == "200" ]]; then
     TMPCSV=$(mktemp /tmp/sqli_XXXX.csv)
     # CSV con fórmula de inyección (CSV Injection / Formula Injection)
     printf '=cmd|" /C calc"!A0,titulo,autor\n"=HYPERLINK(""http://evil.com"",""click"")","Titulo normal","Autor"\n' > "$TMPCSV"
+    # NOTA: La ruta real de subida es POST /, no /upload
     RESP=$(curl -sb "$COOKIEJAR" -X POST "$BASE/" \
         -F "facultad=Test" -F "carrera=Test" \
         -F "csv_file=@${TMPCSV};filename==cmd_injection.csv" \
@@ -164,7 +167,8 @@ else
     log_result WARN "A03-csv-formula-injection" "Login falló, prueba omitida"
 fi
 
-info "Probando nombre de archivo con path traversal"
+info "Probando nombre de archivo con path traversal en POST / (werkzeug.secure_filename debe bloquearlo)"
+# NOTA: La ruta real de subida es POST /, no /upload
 if [[ "$LOGIN_CODE" == "200" ]]; then
     TMPPDF=$(mktemp /tmp/traversal_XXXX.pdf)
     echo "%PDF-1.4 test" > "$TMPPDF"
@@ -173,7 +177,7 @@ if [[ "$LOGIN_CODE" == "200" ]]; then
         -F "files=@${TMPPDF};filename=../../etc/passwd.pdf" \
         -w "\n%{http_code}" -o /dev/null 2>/dev/null | tail -1)
     rm -f "$TMPPDF"
-    info "Respuesta al path traversal en filename: $RESP (werkzeug secure_filename debería sanearlo)"
+    info "Respuesta al path traversal en filename: $RESP (werkzeug.secure_filename() sanea el nombre — el archivo se guarda como 'passwd.pdf' local)"
     log_result PASS "A03-path-traversal-filename" "werkzeug.secure_filename aplicado — verificar destino en logs"
 fi
 
@@ -387,22 +391,28 @@ log_result WARN "A09-failed-login-log" "Verifica manualmente: docker compose log
 # =============================================================================
 header "A10 – SSRF (Server-Side Request Forgery)"
 
-info "Verificando si hay endpoints con parámetros de URL controlables por el usuario"
-# Tu app no expone endpoints SSRF directos, pero verificamos /api/csv y /reporte
+# NOTA: La prueba anterior con ?url= en /api/csv es un FALSO POSITIVO confirmado.
+# api_csv() no lee el parámetro 'url' ni hace fetch externo — solo lee
+# reporte_bibliografia.csv del disco. Flask ignora querystrings no usados
+# y responde 200 igual (o 302 si no hay sesión). No hay SSRF ahí.
+info "[Falso positivo confirmado] /api/csv no usa parámetro url= — no hay SSRF"
 rm -f "$COOKIEJAR"
 do_login "$APP_USER" "$APP_PASSWORD" > /dev/null
 
+# Verificación informativa: cualquier query param debe ser ignorado
 CODE=$(curl -sb "$COOKIEJAR" -so /dev/null -w "%{http_code}" \
     "$BASE/api/csv?url=http://169.254.169.254/latest/meta-data/" 2>/dev/null)
 if [[ "$CODE" == "200" ]]; then
-    warn "El endpoint /api/csv responde 200 con parámetro url= — investiga si hace fetch a esa URL (SSRF potencial)"
-    log_result WARN "A10-ssrf-api-csv" "HTTP 200 con param url= — investigar"
+    ok "/api/csv devuelve 200 con param url= ignorado — Flask lo descarta (no es SSRF)"
+    log_result PASS "A10-ssrf-api-csv" "Falso positivo resuelto — param url ignorado por Flask"
 else
-    ok "/api/csv no parece procesar parámetro url= (HTTP $CODE)"
-    log_result PASS "A10-ssrf-api-csv" "HTTP $CODE — parámetro url ignorado"
+    ok "/api/csv responde $CODE con param url= — comportamiento normal"
+    log_result PASS "A10-ssrf-api-csv" "HTTP $CODE — sin SSRF"
 fi
 
-info "Nota: revisa src/scraper_primo.py — si acepta input del usuario como URL de scraping, sería vector SSRF real"
+info "Acción requerida: revisar manualmente scraper_primo.py"
+warn "Si scraper_primo.py acepta una URL controlada por el usuario como destino de scraping, SÍ habría SSRF real."
+warn "Busca en el código: parámetros de formulario que se pasen a requests.get() o urllib.request.urlopen()"
 log_result WARN "A10-ssrf-scraper" "Revisar manualmente scraper_primo.py — input de URL controlable por usuario"
 
 # =============================================================================

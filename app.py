@@ -12,6 +12,8 @@ import functools
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 from dotenv import load_dotenv
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 load_dotenv()
 
@@ -27,13 +29,66 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-me-in-production-please')
 app.config['UPLOAD_FOLDER'] = tempfile.mkdtemp()
 
+# ── Seguridad de cookies (A07) ────────────────────────────────────────────────
+app.config['SESSION_COOKIE_HTTPONLY'] = True        # No accesible desde JS (anti-XSS)
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'      # Mitiga CSRF en navegadores modernos
+# app.config['SESSION_COOKIE_SECURE'] = True        # Descomentar cuando HTTPS esté activo
+
+# ── Límite de tamaño de subida (A04 — evita DoS por archivos enormes) ─────────
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB máximo
+
 # Credenciales de acceso (configura en .env)
 APP_USER     = os.environ.get('APP_USER', 'admin')
 APP_PASSWORD = os.environ.get('APP_PASSWORD', 'admin1234')
 
+# ── Rate limiting (A04 — fuerza bruta en /login) ─────────────────────────────
+# REDIS_URL la inyecta docker-compose (redis://redis:6379).
+# Si no está definida (dev local sin Docker) cae a memoria → límite aplica
+# por worker, no globalmente (aceptable en entorno de desarrollo).
+_limiter_storage = os.environ.get("REDIS_URL", "memory://")
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[],          # Sin límite global; aplicamos por ruta
+    storage_uri=_limiter_storage,
+)
+
 # Inicializar DB
 init_db()
 migrate_db()
+
+
+# ── Cabeceras de seguridad (A02) ──────────────────────────────────────────────
+@app.after_request
+def set_security_headers(response):
+    """Agrega cabeceras defensivas en todas las respuestas."""
+    # Evita clickjacking
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    # Evita sniffing de Content-Type
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    # CSP básico: solo recursos propios + datos inline (ajusta si usas CDNs)
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:;"
+    )
+    # Referrer policy
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    # HSTS solo tiene sentido sobre HTTPS; se activa aquí para cuando
+    # el perfil production (Nginx+TLS) esté delante
+    if request.is_secure:
+        response.headers['Strict-Transport-Security'] = (
+            'max-age=31536000; includeSubDomains'
+        )
+    return response
+
+
+# ── Manejador de error 413 (archivo demasiado grande) ────────────────────────
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    flash('El archivo supera el límite de 50 MB permitido.')
+    return redirect(url_for('index')), 413
 
 
 # ── Auth helper ───────────────────────────────────────────────
@@ -48,6 +103,7 @@ def login_required(f):
 
 # ── Login / Logout ────────────────────────────────────────────
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute", methods=["POST"])   # A04: máx 5 intentos/min por IP
 def login():
     if session.get('logged_in'):
         return redirect(url_for('index'))
@@ -63,6 +119,14 @@ def login():
             return redirect(next_url)
         error = 'Usuario o contraseña incorrectos.'
     return render_template('login.html', error=error)
+
+
+@app.errorhandler(429)
+def ratelimit_exceeded(error):
+    """Responde a rate limit con mensaje claro (A04)."""
+    return render_template('login.html',
+                           error='Demasiados intentos. Espera un minuto e intenta de nuevo.'
+                           ), 429
 
 
 @app.route('/logout')
